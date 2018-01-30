@@ -94,6 +94,8 @@ SUBDIRS += ${SUBSUBDIRS}
 debug:
 	@echo SRC: ${SRC}
 	@echo y_SRC: ${y_SRC}
+	@echo CPPSRC: ${CPPSRC}
+	@echo y_CPPSRC: ${y_CPPSRC}
 	@echo y_ECMD_SRC: ${y_ECMD_SRC}
 	@echo y_SOAP_SRC: ${y_SOAP_SRC}
 
@@ -145,6 +147,7 @@ compile-$(TARGET): $(TARGET).hex $(TARGET).bin
 .SILENT: compile-$(TARGET)
 
 OBJECTS += $(patsubst %.c,%.o,${SRC} ${y_SRC} meta.c)
+OBJECTS += $(patsubst %.cpp,%.o,${CPPSRC} ${y_CPPSRC})
 OBJECTS += $(patsubst %.c,%.o,${AUTOGEN_SRC} ${y_AUTOGEN_SRC})
 OBJECTS += $(patsubst %.S,%.o,${ASRC} ${y_ASRC})
 
@@ -160,7 +163,7 @@ size-check: $(OBJECTS) ethersex
 	    if avr-nm $$obj | grep -q $(SIZEFUNCARG); then \
 		echo -n "$$obj: "; avr-nm $$obj | grep $(SIZEFUNCARG) | cut -c12- | tr '\n' ','; echo ''; \
 	    fi; \
-	done
+	done	
 
 ##############################################################################
 

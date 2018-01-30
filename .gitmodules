@@ -1,0 +1,3 @@
+[submodule "hardware/ledstripe/FastLED"]
+	path = hardware/ledstripe/FastLED
+	url = https://github.com/FastLED/FastLED.git

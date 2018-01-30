@@ -53,6 +53,7 @@ endif
 
 ifeq ($(ARCH_HOST),y)
   CC=gcc
+  CXX=gcc
   AR=ar
   OBJCOPY = objcopy
   OBJDUMP = objdump
@@ -64,6 +65,7 @@ ifeq ($(ARCH_HOST),y)
   CFLAGS += -ggdb -O0 -std=gnu99
 else
   CC=avr-gcc
+  CXX=avr-gcc
   AR=avr-ar
   OBJCOPY = avr-objcopy
   OBJDUMP = avr-objdump
@@ -74,13 +76,15 @@ else
   # flags for the compiler
   CPPFLAGS += -mmcu=$(MCU) -I$(TOPDIR)
   CFLAGS += -g -Os -std=gnu99
+  CXXFLAGS += -g -Os -std=c++11 -fno-threadsafe-statics
 
-  # flags for the linker
+  # flags for the linker	
   LDFLAGS += -mmcu=$(MCU)
 endif
 
 # remove all unused code and data during linking
 CFLAGS += -fdata-sections -ffunction-sections
+CXXFLAGS += -fdata-sections -ffunction-sections
 LDFLAGS += -Wl,--gc-sections,--relax
 
 # reduce memory usage
@@ -89,13 +93,21 @@ CFLAGS += -funsigned-bitfields
 CFLAGS += -fpack-struct
 CFLAGS += -fshort-enums
 
+CXXFLAGS += -funsigned-char
+CXXFLAGS += -funsigned-bitfields
+CXXFLAGS += -fpack-struct
+CXXFLAGS += -fshort-enums
+
+
 ifneq ($(ARCH_HOST),y)
   CFLAGS += -mcall-prologues
+  CXXFLAGS += -mcall-prologues
 endif
 
 ifeq ($(BOOTLOADER_SUPPORT),y)
 LDFLAGS += -Wl,--section-start=.text=$(BOOTLOADER_START_ADDRESS)
 endif
+
 
 
 %.s: %.c
@@ -106,3 +118,24 @@ endif
 
 %.o: %.S
 	$(CC) -o $@ $(CPPFLAGS) $(ASFLAGS) -c $<
+	
+	
+MSG_COMPILING = Compiling C:
+MSG_COMPILING_CPP = Compiling C++:
+	
+# Compile: create object files from C source files.
+%.o : %.c
+	@echo
+	@echo $(MSG_COMPILING) $<
+	$(CC) -c $(CPPFLAGS) $(CFLAGS) $< -o $@
+
+
+# Compile: create object files from C++ source files.
+%.o : %.cpp
+	@echo
+	@echo $(MSG_COMPILING_CPP) $<
+	$(CC) -c $(CPPFLAGS) $(CXXFLAGS) 	$< -o $@
+	
+	
+	
+		

@@ -10,9 +10,11 @@
 ifneq ($(rootbuild),t)
 ${ECMD_PARSER_SUPPORT}_SRC += ${y_ECMD_SRC}
 SRC += ${y_SRC}
+CPPSRC += ${y_CPPSRC}
 ASRC += ${y_ASRC}
 
 OBJECTS += $(patsubst %.c,%.o,${SRC})
+OBJECTS += $(patsubst %.cpp,%.o,${CPPSRC})
 OBJECTS += $(patsubst %.S,%.o,${ASRC})
 
 # This is NOT a root build, i.e. make has been called directly

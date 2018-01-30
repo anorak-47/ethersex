@@ -1,0 +1,3 @@
+dep_bool_menu "LED stripes (FastLED)" LEDSTRIPE_SUPPORT $ARCH_AVR
+	int "Port number (Arduino)" LEDSTRIPE_PORT_1 10
+endmenu

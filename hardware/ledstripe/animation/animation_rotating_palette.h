@@ -1,0 +1,30 @@
+#ifndef FIRMWARE_LEDSTRIPE_ANIMATION_ROTATING_PALETTE_H_
+#define FIRMWARE_LEDSTRIPE_ANIMATION_ROTATING_PALETTE_H_
+
+#include "led_stripe_animation.h"
+
+namespace fastled
+{
+
+class AnimationRotatingPalette : public LedStripeAnimation
+{
+public:
+    AnimationRotatingPalette(CRGB *leds, uint16_t led_count, animation *animation_info);
+    virtual ~AnimationRotatingPalette();
+
+    virtual bool loop() override;
+    virtual void setOption(uint8_t option) override;
+
+protected:
+    void fillLEDsFromPaletteColors(uint8_t colorIndex);
+    void SetupPurpleAndGreenPalette();
+    void SetupTotallyRandomPalette();
+
+    CRGBPalette16 currentPalette;
+    TBlendType currentBlending = NOBLEND;
+	uint8_t _startIndex = 0;
+};
+
+} /* namespace fastled */
+
+#endif /* FIRMWARE_LEDSTRIPE_ANIMATION_ROTATING_PALETTE_H_ */

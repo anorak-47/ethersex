@@ -37,3 +37,5 @@ endmenu
 
 source hardware/ultrasonic/config.in
 source hardware/hbridge/config.in
+
+source hardware/ledstripe/config.in

@@ -36,6 +36,7 @@ SUBSUBDIRS += hardware/zacwire
 SUBSUBDIRS += hardware/ultrasonic
 SUBSUBDIRS += hardware/serial_ram/23k256
 SUBSUBDIRS += hardware/hbridge
+SUBSUBDIRS += hardware/ledstripe
 
 # generic fluff
 include $(TOPDIR)/scripts/rules.mk
