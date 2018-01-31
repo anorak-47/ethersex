@@ -84,7 +84,7 @@ int16_t shell_command(uint8_t *buffer, uint8_t length, char *output, uint16_t ou
     es_output_buffer = output + 4;
     es_output_buffer_len = output_len;
 
-    LV_("buffer: <%s> l:%u o:%u\n", buffer, length, output_len);
+    //LV_("buffer: <%s> l:%u o:%u\n", buffer, length, output_len);
 
     while ((token = strsep(&str, " ")))
     {
@@ -97,7 +97,7 @@ int16_t shell_command(uint8_t *buffer, uint8_t length, char *output, uint16_t ou
     	return ECMD_ERR_PARSE_ERROR;
     }
 
-    LV_("obl: %u", strlen(output));
+    //LV_("obl: %u", strlen(output));
 
     return ECMD_FINAL(strlen(output));
 }

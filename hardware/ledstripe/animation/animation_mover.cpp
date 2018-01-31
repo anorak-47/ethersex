@@ -30,11 +30,10 @@ void AnimationMover::mover()
     static uint8_t hue = 0;
     for (int i = 0; i < _led_count; i++)
     {
+    	fadeToBlackBy(_leds, _led_count, thisfade); // Low values = slower fade.
         _leds[i] += CHSV(hue, 255, 255);
         _leds[(i + 5) % _led_count] += CHSV(hue + 85, 255, 255);   // We use modulus so that the location is between 0 and _led_count
         _leds[(i + 10) % _led_count] += CHSV(hue + 170, 255, 255); // Same here.
-        show_at_max_brightness_for_power();
-        fadeToBlackBy(_leds, _led_count, thisfade); // Low values = slower fade.
     }
 }
 

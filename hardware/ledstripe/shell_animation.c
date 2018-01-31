@@ -155,11 +155,20 @@ bool animation_cmd_sensor(uint8_t argc, char **argv)
     if (argc < 1)
         return false;
 
+    CATOUT("sns ");
+
+    if (strcmp_P(argv[0], PSTR("upd")) == 0)
+    {
+    	sensors_update();
+    	CATOUT("upd");
+    	return true;
+    }
+
     uint8_t index = atoi(argv[0]);
     if (index >= MAX_SENSORS)
         return false;
 
-    CATOUT("sns ");
+
 
     if (argc == 2)
     {
@@ -183,8 +192,7 @@ bool animation_cmd_sensor(uint8_t argc, char **argv)
 bool animation_cmd_configuration(uint8_t argc, char **argv)
 {
     // str cfg 0 ani [#]
-
-    LV_("cfg argc %u", argc);
+    //LV_("cfg argc %u", argc);
 
     if (argc < 1)
         return false;

@@ -41,13 +41,13 @@ i2c_master_detect(uint8_t range_start, uint8_t range_end)
   uint8_t i2c_address = 0xff;
 
 #ifdef DEBUG_I2C
-  debug_printf("I2C: test for base address %x until %x\n", range_start, range_end);
+  debug_printf("I2C: test for base address 0x%x until 0x%x\n", range_start, range_end);
 #endif
   for (i = range_start; i < range_end; i++) {
     if (i2c_master_select(i, TW_WRITE)) {
       i2c_address = i;
 #ifdef DEBUG_I2C
-      debug_printf("I2C: detected at: %X\n", i2c_address);
+      debug_printf("I2C: detected at: 0x%X\n", i2c_address);
 #endif
       i2c_master_stop();
       break;
@@ -82,7 +82,7 @@ i2c_master_select(uint8_t address, uint8_t mode)
 {
   i2c_master_enable();
   #ifdef DEBUG_I2C
-    debug_printf("i2c master select adr+mode 0x%X\n", (address << 1) | mode);
+    debug_printf("i2c master select (adr, adr+mode) 0x%X, 0x%X\n", address, (address << 1) | mode);
   #endif
 
     /* Start Condition, test on start or repeated start */
@@ -94,6 +94,10 @@ i2c_master_select(uint8_t address, uint8_t mode)
     if ((mode == TW_WRITE && tmp == TW_MT_SLA_ACK)
        || (mode == TW_READ &&  tmp == TW_MR_SLA_ACK))
       return 1;
+
+#ifdef DEBUG_I2C
+    debug_printf("select fail\n");
+#endif
     return 0;
 }
 

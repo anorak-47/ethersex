@@ -26,9 +26,6 @@ extern "C" {
 uint8_t EEMEM chk_animation_eeprom; // assure this variable follows the eeprom
                                     // section which must be checksum-checked!
 
-//animation animations[ANIMATION_COUNT];
-//animation EEMEM animations_eeprom[ANIMATION_COUNT];
-
 led_stripe_animation_status led_stripe_status[MAX_LED_STRIPES];
 led_stripe_animation_status EEMEM led_stripe_status_eeprom[MAX_LED_STRIPES];
 
@@ -119,8 +116,6 @@ void animation_save(void)
 
 void animation_init(void)
 {
-    LS_("animation_init");
-
     // This hopefully calls the Arduino init() from Arduino.h
     init();
 
@@ -212,7 +207,7 @@ void animation_set_fps(uint8_t stripe, animation_names animation, uint8_t fps)
         led_stripe[stripe].delay_msecs = FPS_TO_DELAY(fps);
     }
 
-    LV_("afps %u %u %u", stripe, fps, led_stripe[stripe].delay_msecs);
+    //LV_("afps %u %u %u", stripe, fps, led_stripe[stripe].delay_msecs);
 }
 
 uint8_t animation_get_fps(uint8_t stripe, animation_names animation)
@@ -307,7 +302,7 @@ void animation_set_option(uint8_t stripe, animation_names animation, uint8_t opt
         led_stripe[stripe].animation->setOption(option);
     }
 
-    LV_("aso %u %u %u", stripe, static_cast<uint8_t>(animation), option);
+    //LV_("aso %u %u %u", stripe, static_cast<uint8_t>(animation), option);
 }
 
 uint8_t animation_get_option(uint8_t stripe, animation_names animation)
@@ -367,23 +362,25 @@ void animation_loop()
         }
     }
 
-    EVERY_N_MILLISECONDS(9)
+    EVERY_N_MILLISECONDS(19) // 1000/19 > 50fps
     {
         if (animated)
         {
         	animation_prepare_led_stripes_before_show();
-            FastLED.show();
             // call this more often than 100 times a second to enable the dithering
             // this calls FastLED.countFPS(), too!
+            FastLED.show();
+            // calling this a second time here to fake 100fps, so we get dithering down to 50fsp
+            FastLED.countFPS();
         }
     }
 
 
-    EVERY_N_SECONDS(30)
+    EVERY_N_SECONDS(10)
     {
-    	//sensors_update();
-
+    	sensors_update();
         fld_fps = FastLED.getFPS();
+
 #if DEBUG_OUTPUT_SUPPORTED && defined(ANIMATION_SHOW_FPS)
         LV_("fps: %u", fld_fps);
 #endif

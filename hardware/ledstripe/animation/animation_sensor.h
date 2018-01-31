@@ -24,8 +24,8 @@ protected:
 	uint8_t _option = 0;
 	uint8_t _delta = 0;
 	bool _changed = false;
-	CHSVPalette16 _palette;
-	CHSVPalette16 _movingPalette;
+	CRGBPalette16 _palette;
+	CRGBPalette16 _movingPalette;
     uint16_t _startpos = 0;
     uint16_t _endpos = 0;
 

@@ -16,8 +16,8 @@ extern "C" {
 #define LS_(s) debug_printf(s "\n")
 #define L__(s) debug_printf(#s "\n")
 #else
-#define LV_(s, args...) do {} while(0)
-#define LS_(s) do {} while(0)
+#define LV_(s, args...) do {} while(0) xxx
+#define LS_(s) do {} while(0) xxx
 #define L__(s) do {} while(0)
 #endif
 

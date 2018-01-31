@@ -6,6 +6,7 @@ struct _s_sensor_type
 {
     int8_t value;
     uint8_t fraction;
+    bool isvalid;
 };
 
 typedef struct _s_sensor_type sensor_type;

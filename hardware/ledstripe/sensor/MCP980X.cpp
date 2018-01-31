@@ -18,10 +18,15 @@
  * limitations under the License.
  */
 
-#include "../../i2c/master/i2c_master.h"
 #include "MCP980X.h"
 #include <avr/io.h>
 #include <util/twi.h>
+
+extern "C" {
+#include "../../i2c/master/i2c_master.h"
+}
+
+#include "../ledstripe_debug.h"
 
 /**
  * MCP980X constructor
@@ -37,7 +42,7 @@ MCP980X::MCP980X()
  */
 void MCP980X::useAddress(uint8_t address)
 {
-    this->address = address >> 1;
+    this->address = address;
 }
 
 /**
@@ -97,38 +102,62 @@ end:
  */
 void MCP980X::read(uint8_t reg, uint8_t *buffer, uint8_t lenght)
 {
+    //LV_("mcp read 0x%X", this->address);
+
     /*select slave in write mode */
     if (!i2c_master_select(this->address, TW_WRITE))
+    {
+        //LS_("mcp select fail");
         goto end;
+    }
 
     /*send the register address */
     TWDR = reg;
     if (i2c_master_transmit_with_ack() != TW_MT_DATA_ACK)
+    {
+        //LS_("mcp tack fail");
         goto end;
+    }
 
     /* Do an repeated start condition */
     if (i2c_master_start() != TW_REP_START)
+    {
+        //LS_("mcp start fail");
         goto end;
+    }
 
     /*select the slave in read mode */
     TWDR = (this->address << 1) | TW_READ;
     if (i2c_master_transmit() != TW_MR_SLA_ACK)
+    {
+        //LS_("mcp tmit fail");
         goto end;
+    }
 
     /*get the first byte from the slave */
-    while (lenght-- > 1)
+    while (lenght > 1)
     {
         if (i2c_master_transmit_with_ack() != TW_MR_DATA_ACK)
+        {
+            //LS_("mcp ltack fail");
             goto end;
+        }
 
-        *buffer++ = TWDR;
+        *buffer = TWDR;
+        //LV_("b %u: 0x%X", lenght, *buffer);
+        buffer++;
+        lenght--;
     }
 
     /*get the last byte from the slave */
     if (i2c_master_transmit() != TW_MR_DATA_NACK)
+    {
+        //LS_("mcp fmit fail");
         goto end;
+    }
 
-    *buffer++ = TWDR;
+    *buffer = TWDR;
+    //LV_("b %u: 0x%X", lenght, *buffer);
 
 end:
     i2c_master_stop();
@@ -286,6 +315,7 @@ int16_t MCP980X::readRawData()
 {
     uint8_t temp[2] = {0, 0};
     this->read(REG_TEMP, temp, 2);
+    //LV_("mcp raw hi %u lo %u", temp[0], temp[1]);
     return ((temp[0] << 8) | temp[1]);
 }
 
@@ -330,4 +360,4 @@ int16_t MCP980X::toFahrenheit(int16_t temp)
 float MCP980X::toFahrenheit(float temp)
 {
     return ((temp * (9.0 / 5.0)) + 32);
-    }
+}
