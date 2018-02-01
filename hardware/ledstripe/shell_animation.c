@@ -32,11 +32,14 @@ bool animation_cmd_configuration(uint8_t argc, char **argv);
 bool animation_cmd_global_configuration(uint8_t argc, char **argv);
 bool animation_cmd_sensor(uint8_t argc, char **argv);
 bool animation_cmd_settings(uint8_t argc, char **argv);
+bool animation_cmd_help(uint8_t argc, char **argv);
 
 #ifdef DEBUG_FUNCTIONS_SUPPORTED
 #endif
 
 const struct _s_shell_cmd animation_shell_cmd[] PROGMEM = {
+    SHELLCMD("help", animation_cmd_help, "", "this help"),
+    SHELLCMD("?", animation_cmd_help, "", "this help"),
     SHELLCMD("sta", animation_cmd_status, "#", "animation status"),
     SHELLCMD("run", animation_cmd_run, "# [0/1]", "start/stop animation"),
     SHELLCMD("cfg", animation_cmd_configuration, "# ani|fps|apl|sns|opt #", "animation configuration"),
@@ -47,26 +50,61 @@ const struct _s_shell_cmd animation_shell_cmd[] PROGMEM = {
 #endif
     SHELLCMD(0, 0, 0, 0)};
 
-void animation_dump_status(uint8_t stripe)
-{
-    SPRINTF(".str %u\n", stripe);
-    SPRINTF(".ani %u\n", animation_get_current(stripe));
-    SPRINTF(".run %u\n", animation_get_running(stripe));
-    SPRINTF(".apl %u\n", animation_get_autoplay(stripe));
-    SPRINTF(".fps %u\n", animation_get_current_fps(stripe));
-    SPRINTF(".opt %u\n", animation_get_current_option(stripe));
-    SPRINTF(".sn0 %u\n", animation_get_current_sensor_index(stripe, 0));
-    SPRINTF(".sn1 %u\n", animation_get_current_sensor_index(stripe, 1));
-
-    uint8_t hsv[3];
-    animation_get_current_color(stripe, 0, hsv);
-    SPRINTF(".co0 %x %x %x\n", hsv[0], hsv[1], hsv[2]);
-    animation_get_current_color(stripe, 1, hsv);
-    SPRINTF(".co1 %x %x %x\n", hsv[0], hsv[1], hsv[2]);
-}
-
 #ifdef DEBUG_FUNCTIONS_SUPPORTED
 #endif
+
+bool animation_cmd_help(uint8_t argc, char **argv)
+{
+    struct _s_shell_cmd shell_cmd;
+    uint8_t cmdid = 0;
+
+    memcpy_P(&shell_cmd, &animation_shell_cmd[cmdid++], sizeof(struct _s_shell_cmd));
+
+    while (shell_cmd.name != 0)
+    {
+#if defined(SHELL_ARGS_HELP_SUPPORTED) || defined(SHELL_HELP_SUPPORTED)
+        CATSPRINTF("%s: %s\n", shell_cmd.name, shell_cmd.cmd_help);
+        if (shell_cmd.args_help)
+        	CATSPRINTF(" [%s]\n", shell_cmd.args_help);
+#else
+#if defined(SHELL_ARGS_HELP_SUPPORTED)
+        CATSPRINTF("%s:\n", shell_cmd.name);
+        if (shell_cmd.args_help)
+        	CATSPRINTF(" [%s]\n", shell_cmd.args_help);
+#else
+#if defined(SHELL_HELP_SUPPORTED)
+        CATSPRINTF("%s: %s\n", shell_cmd.name, shell_cmd.cmd_help);
+#else
+        CATSPRINTF("%s\n", shell_cmd.name);
+#endif
+#endif
+#endif
+
+        memcpy_P(&shell_cmd, &animation_shell_cmd[cmdid++], sizeof(struct _s_shell_cmd));
+    }
+
+    return true;
+}
+
+void animation_dump_status(uint8_t stripe)
+{
+    CATSPRINTF("sta %u\n", stripe);
+    CATSPRINTF(".run %u\n", animation_get_running(stripe));
+    CATSPRINTF(".anr %u\n", animation_get_active_animation(stripe));
+    CATSPRINTF(".ani %u\n", animation_get_current_animation(stripe));
+    CATSPRINTF(".asn %u\n", animation_get_sensor_animation(stripe));
+    CATSPRINTF(".opt %u\n", animation_get_current_option(stripe));
+    CATSPRINTF(".asw %u\n", animation_get_autoswitch_sensor_animation(stripe));
+    CATSPRINTF(".apl %u\n", animation_get_autoplay(stripe));
+    CATSPRINTF(".fps %u\n", animation_get_current_fps(stripe));
+    CATSPRINTF(".sn0 %u\n", animation_get_current_sensor_index(stripe, 0));
+    CATSPRINTF(".sn1 %u\n", animation_get_current_sensor_index(stripe, 1));
+    uint8_t hsv[3];
+    animation_get_current_color(stripe, 0, hsv);
+    CATSPRINTF(".co0 %x %x %x\n", hsv[0], hsv[1], hsv[2]);
+    animation_get_current_color(stripe, 1, hsv);
+    CATSPRINTF(".co1 %x %x %x\n", hsv[0], hsv[1], hsv[2]);
+}
 
 bool animation_cmd_settings(uint8_t argc, char **argv)
 {
@@ -83,10 +121,16 @@ bool animation_cmd_settings(uint8_t argc, char **argv)
         {
             animation_load(true);
         }
-        else
+        else if (strcmp_P(argv[0], PSTR("save")) == 0)
         {
             animation_save();
         }
+        else
+        {
+            return false;
+        }
+
+        SPRINTF("set %s", argv[0]);
     }
     else
     {
@@ -98,12 +142,12 @@ bool animation_cmd_settings(uint8_t argc, char **argv)
         {
             animation_load_stripe(stripe);
         }
-        else
+        else if (strcmp_P(argv[1], PSTR("save")) == 0)
         {
             animation_save_stripe(stripe);
         }
 
-        SPRINTF(".str %u\n", stripe);
+        SPRINTF("set %u %s", stripe, argv[1]);
     }
 
     return true;
@@ -159,16 +203,14 @@ bool animation_cmd_sensor(uint8_t argc, char **argv)
 
     if (strcmp_P(argv[0], PSTR("upd")) == 0)
     {
-    	sensors_update();
-    	CATOUT("upd");
-    	return true;
+        sensors_update();
+        CATOUT("upd");
+        return true;
     }
 
     uint8_t index = atoi(argv[0]);
     if (index >= MAX_SENSORS)
         return false;
-
-
 
     if (argc == 2)
     {
@@ -176,7 +218,7 @@ bool animation_cmd_sensor(uint8_t argc, char **argv)
         sensors_set_value(index, value);
     }
 
-    if (argc == 3)
+    else if (argc == 3)
     {
         int8_t value = atoi(argv[1]);
         uint8_t fraction = atoi(argv[2]);
@@ -192,7 +234,7 @@ bool animation_cmd_sensor(uint8_t argc, char **argv)
 bool animation_cmd_configuration(uint8_t argc, char **argv)
 {
     // str cfg 0 ani [#]
-    //LV_("cfg argc %u", argc);
+    // LV_("cfg argc %u", argc);
 
     if (argc < 1)
         return false;
@@ -209,7 +251,24 @@ bool animation_cmd_configuration(uint8_t argc, char **argv)
 
         if (strcmp_P(argv[1], PSTR("ani")) == 0)
         {
-            animation_set_current(stripe, argv3);
+            animation_set_current_animation(stripe, argv3);
+        }
+
+        else if (strcmp_P(argv[1], PSTR("anc")) == 0)
+        {
+            animation_set_current_animation(stripe, argv3);
+            animation_set_active_animation(stripe, animation_get_current_animation(stripe));
+        }
+
+        else if (strcmp_P(argv[1], PSTR("asn")) == 0)
+        {
+            animation_set_sensor_animation(stripe, argv3);
+        }
+
+        else if (strcmp_P(argv[1], PSTR("asc")) == 0)
+        {
+            animation_set_sensor_animation(stripe, argv3);
+            animation_set_active_animation(stripe, animation_get_sensor_animation(stripe));
         }
 
         else if (strcmp_P(argv[1], PSTR("fps")) == 0)
@@ -220,6 +279,11 @@ bool animation_cmd_configuration(uint8_t argc, char **argv)
         else if (strcmp_P(argv[1], PSTR("apl")) == 0)
         {
             animation_set_autoplay(stripe, argv3);
+        }
+
+        else if (strcmp_P(argv[1], PSTR("asw")) == 0)
+        {
+            animation_set_autoswitch_sensor_animation(stripe, argv3);
         }
 
         else if (strcmp_P(argv[1], PSTR("opt")) == 0)
@@ -269,50 +333,75 @@ bool animation_cmd_configuration(uint8_t argc, char **argv)
     {
         // str cfg 0 ani [#]
 
-        SPRINTF("cfg %u ", stripe);
+        CATSPRINTF("%s ", argv[1]);
 
         if (strcmp_P(argv[1], PSTR("ani")) == 0)
         {
-            SPRINTF("ani %u", animation_get_current(stripe));
+            SPRINTF("%u", animation_get_current_animation(stripe));
+        }
+
+        else if (strcmp_P(argv[1], PSTR("anc")) == 0)
+		{
+        	SPRINTF("%u", animation_get_current_animation(stripe));
+		}
+
+        else if (strcmp_P(argv[1], PSTR("asn")) == 0)
+        {
+            SPRINTF("%u", animation_get_sensor_animation(stripe));
+        }
+
+        else if (strcmp_P(argv[1], PSTR("asc")) == 0)
+        {
+            SPRINTF("%u", animation_get_sensor_animation(stripe));
+        }
+
+        else if (strcmp_P(argv[1], PSTR("anr")) == 0)
+        {
+            SPRINTF("%u", animation_get_active_animation(stripe));
         }
 
         else if (strcmp_P(argv[1], PSTR("fps")) == 0)
         {
-            SPRINTF("fps %u", animation_get_current_fps(stripe));
+            SPRINTF("%u", animation_get_current_fps(stripe));
         }
 
         else if (strcmp_P(argv[1], PSTR("apl")) == 0)
         {
-            SPRINTF("apl %u", animation_get_autoplay(stripe));
+            SPRINTF("%u", animation_get_autoplay(stripe));
+        }
+
+        else if (strcmp_P(argv[1], PSTR("asw")) == 0)
+        {
+            SPRINTF("%u", animation_get_autoswitch_sensor_animation(stripe));
         }
 
         else if (strcmp_P(argv[1], PSTR("opt")) == 0)
         {
-            SPRINTF("opt %u", animation_get_current_option(stripe));
+            SPRINTF("%u", animation_get_current_option(stripe));
         }
 
         else if (strcmp_P(argv[1], PSTR("sn0")) == 0)
         {
-            SPRINTF("sn0 %u", animation_get_current_sensor_index(stripe, 0));
+            SPRINTF("%u", animation_get_current_sensor_index(stripe, 0));
         }
 
         else if (strcmp_P(argv[1], PSTR("sn1")) == 0)
         {
-            SPRINTF("sn1 %u", animation_get_current_sensor_index(stripe, 1));
+            SPRINTF("%u", animation_get_current_sensor_index(stripe, 1));
         }
 
         else if (strcmp_P(argv[1], PSTR("co0")) == 0)
         {
             uint8_t hsv[3];
             animation_get_current_color(stripe, 0, hsv);
-            SPRINTF("co0 %u %u %u", hsv[0], hsv[1], hsv[2]);
+            SPRINTF("%u %u %u", hsv[0], hsv[1], hsv[2]);
         }
 
         else if (strcmp_P(argv[1], PSTR("co1")) == 0)
         {
             uint8_t hsv[3];
             animation_get_current_color(stripe, 1, hsv);
-            SPRINTF("co1 %u %u %u", hsv[0], hsv[1], hsv[2]);
+            SPRINTF("%u %u %u", hsv[0], hsv[1], hsv[2]);
         }
 
         else
@@ -320,8 +409,6 @@ bool animation_cmd_configuration(uint8_t argc, char **argv)
             return false;
         }
     }
-
-    // animation_dump_status(stripe);
 
     return true;
 }
@@ -348,7 +435,7 @@ bool animation_cmd_run(uint8_t argc, char **argv)
 
 bool animation_cmd_status(uint8_t argc, char **argv)
 {
-    if (argc != 1)
+    if (argc < 1)
         return false;
 
     uint8_t stripe = atoi(argv[0]);

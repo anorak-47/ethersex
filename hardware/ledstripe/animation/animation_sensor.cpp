@@ -4,8 +4,6 @@
 
 #include "../ledstripe_debug.h"
 
-#define TMAX 40
-#define TREF 20
 //#define PMAX (255 - (256 / 16))
 #define PMAX 255
 #define TSTEPS ((PMAX + 1) / (TMAX - TREF))
@@ -21,33 +19,55 @@ AnimationSensor::~AnimationSensor()
 {
 }
 
-void AnimationSensor::initialize()
+void AnimationSensor::updateSensors()
 {
-    setOption(5);
-
-    LV_("sn0 %u, sn1 %u", sensors_get_value(_animation_info->sensor_index[0]), sensors_get_value(_animation_info->sensor_index[1]));
-
-    uint8_t sns_current_value = sensors_get_value(_animation_info->sensor_index[1]);
-    int8_t sd = sns_current_value - sensors_get_value(_animation_info->sensor_index[0]);
+    sns_current_value = sensors_get_value(_animation_info->sensor_index[SENSOR_IDX_CURRENT]);
+    sns_ref_value = sensors_get_value(_animation_info->sensor_index[SENSOR_IDX_REF]);
 
     if (sns_current_value < TREF)
         sns_current_value = TREF;
 
-    _startpos = (sns_current_value - TREF) * TSTEPS;
-    _endpos = (sns_current_value - TREF + 1) * TSTEPS;
+    delta = sns_current_value - sns_ref_value;
+}
 
-    if (_endpos > PMAX)
+bool AnimationSensor::sensorsChanged()
+{
+    int8_t delta = sns_current_value - sns_ref_value;
+    bool changed = (_old_delta != delta);
+    _old_delta = delta;
+
+    if (changed)
+    	updatePalette();
+
+    return changed || animateByOptionValue();
+}
+
+bool AnimationSensor::animateByOptionValue()
+{
+    return (_option & 0x80) || (_option & 0x40);
+}
+
+void AnimationSensor::updatePalette()
+{
+    uint16_t startpos = (sns_current_value - TREF) * TSTEPS;
+    uint16_t endpos = (sns_current_value - TREF + 1) * TSTEPS;
+
+    if (endpos > PMAX)
     {
-        _endpos = PMAX;
-        _startpos = _endpos - TSTEPS;
+        endpos = PMAX;
+        startpos = endpos - TSTEPS;
     }
 
-    _movingPalette = CRGBPalette16(ColorFromPalette(_palette, _startpos), ColorFromPalette(_palette, _endpos));
+    LV_("snsa: c:%i r:%i %u-%u", sns_current_value, sns_ref_value, startpos, endpos);
 
-    LV_("v %i %u - %u", sns_current_value, _startpos, _endpos);
+    _movingPalette = CRGBPalette16(ColorFromPalette(_palette, startpos), ColorFromPalette(_palette, endpos));
+}
 
-    _delta = sd;
-    _changed = true;
+void AnimationSensor::initialize()
+{
+	delta = 0;
+    _old_delta = 0;
+    _startIndex = 0;
 }
 
 DEFINE_GRADIENT_PALETTE(heatmap_gp){0,   0,   0,   0,    // black
@@ -84,9 +104,7 @@ void AnimationSensor::setOption(uint8_t option)
         break;
     }
 
-    _movingPalette = CRGBPalette16(ColorFromPalette(_palette, _startpos), ColorFromPalette(_palette, _endpos));
-
-    _changed = true;
+    _old_delta = 0;
 }
 
 void AnimationSensor::update()
@@ -109,61 +127,41 @@ void AnimationSensor::addGlitterAt(uint16_t led, fract8 chanceOfGlitter)
     }
 }
 
-bool AnimationSensor::loop()
+void AnimationSensor::animate()
 {
-    uint8_t sns_current_value = sensors_get_value(_animation_info->sensor_index[1]);
-
-    if (sns_current_value < TREF)
-        sns_current_value = TREF;
-
-    int8_t sd = sns_current_value - sensors_get_value(_animation_info->sensor_index[0]);
-
-    if (sd > 1 && sd != _delta)
+    if (_option & 0x40)
     {
-        LV_("sd %i", sd);
-
-        _startpos = (sns_current_value - TREF) * TSTEPS;
-        _endpos = (sns_current_value - TREF + 1) * TSTEPS;
-
-        if (_endpos > PMAX)
+    	/*
+        for (uint16_t i = 0; i < _led_count; i++)
         {
-            _endpos = PMAX;
-            _startpos = _endpos - TSTEPS;
+            _leds[i] = ColorFromPalette(_movingPalette, i + _startIndex);
         }
+        */
 
-        _movingPalette = CRGBPalette16(ColorFromPalette(_palette, _startpos), ColorFromPalette(_palette, _endpos));
-
-        LV_("v %i %u - %u", sns_current_value, _startpos, _endpos);
-
-        _delta = sd;
-        _changed = true;
+        fill_palette(_leds, _led_count, 0, _startIndex, _movingPalette, 255, LINEARBLEND);
+        _startIndex++;
+    }
+    else
+    {
+        fill_palette(_leds, _led_count, 0, 0, _movingPalette, 255, LINEARBLEND);
     }
 
-    if ((_option & 0x80) || (_option & 0x40) || _changed)
+    if (_option & 0x80)
     {
-        if (_option & 0x40)
+        for (uint16_t i = 0; i < _led_count; i++)
         {
-            for (uint16_t i = 0; i < _led_count; i++)
-            {
-                _leds[i] = ColorFromPalette(_movingPalette, i + _startIndex);
-            }
-
-            _startIndex++;
+            addGlitterAt(i, 8);
         }
-        else
-        {
-            fill_gradient_RGB(_leds, 0, ColorFromPalette(_palette, _startpos), _led_count - 1, ColorFromPalette(_palette, _endpos));
-        }
+    }
+}
 
-        if (_option & 0x80)
-        {
-            for (uint16_t i = 0; i < _led_count; i++)
-            {
-                addGlitterAt(i, 8);
-            }
-        }
+bool AnimationSensor::loop()
+{
+    updateSensors();
 
-        _changed = false;
+    if (sensorsChanged())
+    {
+        animate();
         return true;
     }
 

@@ -6,7 +6,11 @@
 extern "C" {
 #endif
 
-#define MAX_SENSORS (4)
+#define MAX_SENSORS (5)
+
+#define TMAX 40
+#define TREF 20
+#define TDELTA 2
 
 void sensors_init(void);
 void sensors_update(void);

@@ -27,8 +27,13 @@ void animation_save_stripe(uint8_t stripe);
 void animation_set_running(uint8_t stripe, bool running);
 bool animation_get_running(uint8_t stripe);
 
-animation_names animation_get_current(uint8_t stripe);
-void animation_set_current(uint8_t stripe, animation_names animation);
+animation_names animation_get_current_animation(uint8_t stripe);
+void animation_set_current_animation(uint8_t stripe, animation_names animation);
+animation_names animation_get_sensor_animation(uint8_t stripe);
+void animation_set_sensor_animation(uint8_t stripe, animation_names animation);
+
+animation_names animation_get_active_animation(uint8_t stripe);
+void animation_set_active_animation(uint8_t stripe, animation_names animation);
 
 uint8_t animation_get_current_fps(uint8_t stripe);
 void animation_set_current_fps(uint8_t stripe, uint8_t fps);
@@ -56,6 +61,9 @@ uint8_t animation_get_current_option(uint8_t stripe);
 
 void animation_set_option(uint8_t stripe, animation_names animation, uint8_t option);
 uint8_t animation_get_option(uint8_t stripe, animation_names animation);
+
+void animation_set_autoswitch_sensor_animation(uint8_t stripe, bool on);
+bool animation_get_autoswitch_sensor_animation(uint8_t stripe);
 
 void animation_set_global_brightness(uint8_t brightness);
 uint8_t animation_get_global_brightness(void);

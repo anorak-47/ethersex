@@ -5,8 +5,8 @@
 #include <inttypes.h>
 #include <stdbool.h>
 
-//#define SHELL_ARGS_HELP_SUPPORTED
-//#define SHELL_HELP_SUPPORTED
+#define SHELL_ARGS_HELP_SUPPORTED
+#define SHELL_HELP_SUPPORTED
 
 struct _s_shell_cmd
 {

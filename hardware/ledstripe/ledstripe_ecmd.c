@@ -37,8 +37,12 @@
 #include "shell.h"
 #include "shell_animation.h"
 
+#define ECMD_LEDSTRIPE_OUTPUT_SIZE 300
+
 char* es_output_buffer = 0;
 uint16_t es_output_buffer_len = 0;
+
+static char output_buffer[ECMD_LEDSTRIPE_OUTPUT_SIZE];
 
 #if FASTLED_SUPPORTED
 bool cmd_fastled(uint8_t argc, char **argv)
@@ -72,17 +76,16 @@ bool sub_shell_command(const struct _s_shell_cmd *sub_cmd, uint8_t argc, char **
     return false;
 }
 
-int16_t shell_command(uint8_t *buffer, uint8_t length, char *output, uint16_t output_len)
+bool shell_command(uint8_t *buffer, uint8_t length)
 {
     char *str = (char *)buffer;
     char *token;
     uint8_t argc = 0;
     char *argv[10];
 
-    strcpy_P(output, PSTR("str "));
-
-    es_output_buffer = output + 4;
-    es_output_buffer_len = output_len;
+    strcpy_P(es_output_buffer, PSTR("str "));
+    es_output_buffer += 4;
+    es_output_buffer_len -= 4;
 
     //LV_("buffer: <%s> l:%u o:%u\n", buffer, length, output_len);
 
@@ -92,23 +95,57 @@ int16_t shell_command(uint8_t *buffer, uint8_t length, char *output, uint16_t ou
         argc++;
     }
 
-    if (!sub_shell_command(animation_shell_cmd, argc, argv))
-    {
-    	return ECMD_ERR_PARSE_ERROR;
-    }
-
-    //LV_("obl: %u", strlen(output));
-
-    return ECMD_FINAL(strlen(output));
+    return sub_shell_command(animation_shell_cmd, argc, argv);
 }
 
 int16_t parse_cmd_ledstripe_animation(char *cmd, char *output, uint16_t len)
 {
+	char *ocmd = cmd;
+	//LV_("cmd <%s> %u", cmd, (uint8_t)cmd[0]);
+
+	if (cmd[0] == ECMD_STATE_MAGIC)
+	{
+		char *token = strsep(&es_output_buffer, "\n");
+		if (token)
+		{
+        	uint16_t l = strlen(token);
+        	strncpy(output, token, len-1);
+			return ECMD_AGAIN(l);
+		}
+		return ECMD_FINAL_OK;
+	}
+
+	es_output_buffer = output_buffer;
+	es_output_buffer_len = ECMD_LEDSTRIPE_OUTPUT_SIZE;
+
     // skip leading spaces
     while (*cmd == ' ')
         cmd++;
 
-    return shell_command((uint8_t *)cmd, strlen(cmd), output, len);
+    if (shell_command((uint8_t *)cmd, strlen(cmd)))
+    {
+    	es_output_buffer = output_buffer;
+
+    	if (strlen(es_output_buffer) >= len)
+    	{
+    		LV_("ecmd eso %u", strlen(es_output_buffer));
+    		char *token = strsep(&es_output_buffer, "\n");
+        	uint16_t l = strlen(token);
+        	LV_("tok %u %s", l, token);
+        	strncpy(output, token, len-1);
+
+        	ocmd[0] = ECMD_STATE_MAGIC;
+        	ocmd[1] = 0;
+
+    		return ECMD_AGAIN(l);
+    	}
+
+    	uint16_t l = strlen(es_output_buffer);
+    	strncpy(output, es_output_buffer, len-1);
+    	return ECMD_FINAL(l);
+    }
+
+    return ECMD_ERR_PARSE_ERROR;
 }
 
 /*

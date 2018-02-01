@@ -52,7 +52,12 @@ void animation_reset(void)
         memset(&led_stripe_status[stripe], 0, sizeof(led_stripe_animation_status));
 
         led_stripe_status[stripe].autoplay = false;
+
         led_stripe_status[stripe].current_animation = animation_names::AnimationLittle;
+        led_stripe_status[stripe].sensor_animation = animation_names::AnimationSensorVisualisation;
+
+        // led_stripe_status[stripe].sensor_index[0] = 0;
+        // led_stripe_status[stripe].sensor_index[1] = 1;
 
         for (uint8_t a = 0; a < ANIMATION_COUNT; a++)
         {
@@ -110,8 +115,8 @@ void animation_save(void)
 {
     for (uint8_t i = 0; i < MAX_LED_STRIPES; i++)
         animation_save_stripe(i);
-    eeprom_update_byte(&chk_animation_eeprom, EEPROM_CHK_MAGIC);
     eeprom_update_byte(&global_brightness_eeprom, animation_get_global_brightness());
+    eeprom_update_byte(&chk_animation_eeprom, EEPROM_CHK_MAGIC);
 }
 
 void animation_init(void)
@@ -174,12 +179,32 @@ void animation_set_current_fps(uint8_t stripe, uint8_t fps)
     animation_set_fps(stripe, led_stripe_status[stripe].current_animation, fps);
 }
 
-animation_names animation_get_current(uint8_t stripe)
+animation_names animation_get_current_animation(uint8_t stripe)
 {
     return led_stripe_status[stripe].current_animation;
 }
 
-void animation_set_current(uint8_t stripe, animation_names animation)
+void animation_set_current_animation(uint8_t stripe, animation_names animation)
+{
+    led_stripe_status[stripe].current_animation = animation;
+}
+
+animation_names animation_get_sensor_animation(uint8_t stripe)
+{
+    return led_stripe_status[stripe].sensor_animation;
+}
+
+void animation_set_sensor_animation(uint8_t stripe, animation_names animation)
+{
+    led_stripe_status[stripe].sensor_animation = animation;
+}
+
+animation_names animation_get_active_animation(uint8_t stripe)
+{
+    return led_stripe[stripe].active_animation;
+}
+
+void animation_set_active_animation(uint8_t stripe, animation_names animation)
 {
     bool running = led_stripe[stripe].is_running;
     animation_stop(stripe);
@@ -207,7 +232,7 @@ void animation_set_fps(uint8_t stripe, animation_names animation, uint8_t fps)
         led_stripe[stripe].delay_msecs = FPS_TO_DELAY(fps);
     }
 
-    //LV_("afps %u %u %u", stripe, fps, led_stripe[stripe].delay_msecs);
+    // LV_("afps %u %u %u", stripe, fps, led_stripe[stripe].delay_msecs);
 }
 
 uint8_t animation_get_fps(uint8_t stripe, animation_names animation)
@@ -227,6 +252,8 @@ void animation_set_autoplay(uint8_t stripe, bool autoplay)
 
 void animation_set_color(uint8_t stripe, animation_names animation, uint8_t cnr, uint8_t *hsv)
 {
+    if (cnr > 1)
+        return;
     // LV_("sc %u %u %u", stripe, animation, cnr);
     // LV_("sc %u %u %u", hsv[0], hsv[1], hsv[2]);
     led_stripe_status[stripe].animations[static_cast<uint8_t>(animation)].hsv[cnr] = CHSV(hsv[0], hsv[1], hsv[2]);
@@ -240,6 +267,8 @@ void animation_set_color(uint8_t stripe, animation_names animation, uint8_t cnr,
 
 void animation_get_color(uint8_t stripe, animation_names animation, uint8_t cnr, uint8_t *hsv)
 {
+    if (cnr > 1)
+        return;
     // LV_("gc %u %u %u", stripe, animation, cnr);
     // LV_("gc %u %u %u",
     // led_stripe_status[stripe].animations[static_cast<uint8_t>(animation)].hsv[cnr].hue,
@@ -261,8 +290,11 @@ void animation_get_current_color(uint8_t stripe, uint8_t cnr, uint8_t hsv[3])
     animation_get_color(stripe, led_stripe_status[stripe].current_animation, cnr, hsv);
 }
 
+#if 1
 void animation_set_sensor_index(uint8_t stripe, animation_names animation, uint8_t sensor, uint8_t sensor_index)
 {
+    if (sensor_index >= MAX_SENSORS || sensor > 1)
+        return;
     led_stripe_status[stripe].animations[static_cast<uint8_t>(animation)].sensor_index[sensor] = sensor_index;
     if (led_stripe[stripe].animation)
         led_stripe[stripe].animation->update();
@@ -270,6 +302,8 @@ void animation_set_sensor_index(uint8_t stripe, animation_names animation, uint8
 
 uint8_t animation_get_sensor_index(uint8_t stripe, animation_names animation, uint8_t sensor)
 {
+    if (sensor > 1)
+        return 0;
     return led_stripe_status[stripe].animations[static_cast<uint8_t>(animation)].sensor_index[sensor];
 }
 
@@ -282,6 +316,21 @@ uint8_t animation_get_current_sensor_index(uint8_t stripe, uint8_t sensor)
 {
     return animation_get_sensor_index(stripe, led_stripe_status[stripe].current_animation, sensor);
 }
+
+#else
+
+void animation_set_current_sensor_index(uint8_t stripe, uint8_t sensor, uint8_t sensor_index)
+{
+    led_stripe_status[stripe].sensor_index[sensor] = sensor_index;
+    if (led_stripe[stripe].animation)
+        led_stripe[stripe].animation->update();
+}
+
+uint8_t animation_get_current_sensor_index(uint8_t stripe, uint8_t sensor)
+{
+    return led_stripe_status[stripe].sensor_index[sensor];
+}
+#endif
 
 void animation_set_current_option(uint8_t stripe, uint8_t option)
 {
@@ -302,7 +351,7 @@ void animation_set_option(uint8_t stripe, animation_names animation, uint8_t opt
         led_stripe[stripe].animation->setOption(option);
     }
 
-    //LV_("aso %u %u %u", stripe, static_cast<uint8_t>(animation), option);
+    // LV_("aso %u %u %u", stripe, static_cast<uint8_t>(animation), option);
 }
 
 uint8_t animation_get_option(uint8_t stripe, animation_names animation)
@@ -323,6 +372,71 @@ uint8_t animation_get_global_brightness()
 uint16_t get_current_fld_fps()
 {
     return fld_fps;
+}
+
+void animation_set_autoswitch_sensor_animation(uint8_t stripe, bool on)
+{
+    led_stripe_status[stripe].is_autoswitch_sensor_animation = on;
+}
+
+bool animation_get_autoswitch_sensor_animation(uint8_t stripe)
+{
+    return led_stripe_status[stripe].is_autoswitch_sensor_animation;
+}
+
+bool is_sensor_animation(uint8_t stripe)
+{
+    int8_t sns_current_value = sensors_get_value(animation_get_current_sensor_index(stripe, SENSOR_IDX_CURRENT));
+    int8_t sns_ref_value = sensors_get_value(animation_get_current_sensor_index(stripe, SENSOR_IDX_REF));
+
+    if (sns_current_value < TREF)
+        sns_current_value = TREF;
+
+    int8_t delta = sns_current_value - sns_ref_value;
+
+    return (delta > TDELTA);
+}
+
+void switch_to_sensor_animation(uint8_t stripe)
+{
+    if (!animation_get_autoswitch_sensor_animation(stripe))
+        return;
+
+    animation_names requested_animation;
+
+    if (is_sensor_animation(stripe))
+    {
+        requested_animation = animation_get_sensor_animation(stripe);
+    }
+    else
+    {
+        requested_animation = animation_get_current_animation(stripe);
+    }
+
+    if (requested_animation != animation_get_active_animation(stripe))
+    {
+        LV_("run animation %u", requested_animation);
+        animation_set_active_animation(stripe, requested_animation);
+    }
+
+    /*
+    if (is_sensor_animation(stripe))
+    {
+        if (animation_get_sensor_animation(stripe) != animation_get_active_animation(stripe))
+        {
+            LV_("run sensor animation");
+            animation_set_active_animation(stripe, animation_get_sensor_animation(stripe));
+        }
+    }
+    else
+    {
+        if (animation_get_current_animation(stripe) != animation_get_active_animation(stripe))
+        {
+            LV_("run current animation");
+            animation_set_active_animation(stripe, animation_get_current_animation(stripe));
+        }
+    }
+    */
 }
 
 #define TIMER_DIFF(a, b, max) ((a) >= (b) ? (a) - (b) : (max) - (b) + (a))
@@ -366,7 +480,7 @@ void animation_loop()
     {
         if (animated)
         {
-        	animation_prepare_led_stripes_before_show();
+            animation_prepare_led_stripes_before_show();
             // call this more often than 100 times a second to enable the dithering
             // this calls FastLED.countFPS(), too!
             FastLED.show();
@@ -375,17 +489,26 @@ void animation_loop()
         }
     }
 
+    EVERY_N_SECONDS(1)
+    {
+        sensors_update();
+    }
 
     EVERY_N_SECONDS(10)
     {
-    	sensors_update();
+        // sensors_update();
+
+        for (uint8_t stripe = 0; stripe < MAX_LED_STRIPES; stripe++)
+        {
+            switch_to_sensor_animation(stripe);
+        }
+
         fld_fps = FastLED.getFPS();
 
 #if DEBUG_OUTPUT_SUPPORTED && defined(ANIMATION_SHOW_FPS)
         LV_("fps: %u", fld_fps);
 #endif
     }
-
 }
 }
 #endif

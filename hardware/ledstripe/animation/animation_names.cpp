@@ -31,7 +31,7 @@ void animation_set_for_stripe(uint8_t stripe, animation_names animation)
 
     delete led_stripe[stripe].animation;
 
-    led_stripe_status[stripe].current_animation = animation;
+    led_stripe[stripe].active_animation = animation;
     led_stripe[stripe].delay_msecs = FPS_TO_DELAY(led_stripe_status[stripe].animations[animation_index].fps);
 
     switch (animation)
