@@ -47,6 +47,7 @@ typedef struct _s_led_stripe_animation_status led_stripe_animation_status;
 struct _s_led_stripe_animation
 {
     bool is_running;
+    bool is_current_animation_running_before_switching;
     animation_names active_animation;
     uint16_t delay_msecs;
     uint16_t loop_timer;

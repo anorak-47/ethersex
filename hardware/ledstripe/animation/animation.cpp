@@ -11,7 +11,7 @@
 #if FASTLED_SUPPORTED
 
 //#define ANIMATION_LIMIT_FPS_BY_TIMER1
-#define ANIMATION_SHOW_FPS
+//#define ANIMATION_SHOW_FPS
 
 #ifdef ANIMATION_LIMIT_FPS_BY_TIMER1
 #include "timer.h"
@@ -51,24 +51,29 @@ void animation_reset(void)
 
         memset(&led_stripe_status[stripe], 0, sizeof(led_stripe_animation_status));
 
-        led_stripe_status[stripe].autoplay = false;
-
+        led_stripe_status[stripe].autoplay = true;
+        led_stripe_status[stripe].is_autoswitch_sensor_animation = true;
         led_stripe_status[stripe].current_animation = animation_names::AnimationLittle;
         led_stripe_status[stripe].sensor_animation = animation_names::AnimationSensorVisualisation;
 
-        // led_stripe_status[stripe].sensor_index[0] = 0;
-        // led_stripe_status[stripe].sensor_index[1] = 1;
+        // led_stripe_status[stripe].sensor_index[SENSOR_IDX_CURRENT] = 0;
+        // led_stripe_status[stripe].sensor_index[SENSOR_IDX_REF] = 1;
 
         for (uint8_t a = 0; a < ANIMATION_COUNT; a++)
         {
             led_stripe_status[stripe].animations[a].fps = 10;
-            led_stripe_status[stripe].animations[a].sensor_index[0] = 0;
-            led_stripe_status[stripe].animations[a].sensor_index[1] = 1;
+            led_stripe_status[stripe].animations[a].sensor_index[SENSOR_IDX_CURRENT] = 0;
+            led_stripe_status[stripe].animations[a].sensor_index[SENSOR_IDX_REF] = 1;
             led_stripe_status[stripe].animations[a].hsv[0] = CHSV(0, 255, 255);
             led_stripe_status[stripe].animations[a].hsv[1] = CHSV(127, 255, 255);
         }
 
         animation_set_for_stripe(stripe, led_stripe_status[stripe].current_animation);
+
+        if (led_stripe_status[stripe].autoplay)
+        {
+            animation_start(stripe);
+        }
     }
 }
 
@@ -386,13 +391,20 @@ bool animation_get_autoswitch_sensor_animation(uint8_t stripe)
 
 bool is_sensor_animation(uint8_t stripe)
 {
-    int8_t sns_current_value = sensors_get_value(animation_get_current_sensor_index(stripe, SENSOR_IDX_CURRENT));
-    int8_t sns_ref_value = sensors_get_value(animation_get_current_sensor_index(stripe, SENSOR_IDX_REF));
+    animation_names sensor_animation = animation_get_sensor_animation(stripe);
+
+    LV_("[%u] idx %u %u %u", stripe, sensor_animation, animation_get_sensor_index(stripe, sensor_animation, SENSOR_IDX_CURRENT),
+        animation_get_sensor_index(stripe, sensor_animation, SENSOR_IDX_REF));
+
+    int8_t sns_current_value = sensors_get_value(animation_get_sensor_index(stripe, sensor_animation, SENSOR_IDX_CURRENT));
+    int8_t sns_ref_value = sensors_get_value(animation_get_sensor_index(stripe, sensor_animation, SENSOR_IDX_REF));
 
     if (sns_current_value < TREF)
         sns_current_value = TREF;
 
     int8_t delta = sns_current_value - sns_ref_value;
+
+    LV_("[%u] sns %i %i d:%i", stripe, sns_current_value, sns_ref_value, delta);
 
     return (delta > TDELTA);
 }
@@ -406,17 +418,34 @@ void switch_to_sensor_animation(uint8_t stripe)
 
     if (is_sensor_animation(stripe))
     {
+        LV_("[%u] to sensor ani", stripe);
         requested_animation = animation_get_sensor_animation(stripe);
     }
     else
     {
+        LV_("[%u] to current ani", stripe);
         requested_animation = animation_get_current_animation(stripe);
     }
 
     if (requested_animation != animation_get_active_animation(stripe))
     {
-        LV_("run animation %u", requested_animation);
-        animation_set_active_animation(stripe, requested_animation);
+        LV_("[%u] run animation %u", stripe, requested_animation);
+        // animation_set_active_animation(stripe, requested_animation);
+
+        animation_stop(stripe);
+        animation_set_for_stripe(stripe, requested_animation);
+
+        if (requested_animation == animation_get_sensor_animation(stripe))
+        {
+            led_stripe[stripe].is_current_animation_running_before_switching = led_stripe[stripe].is_running;
+            animation_start(stripe);
+        }
+        else
+        {
+        	LV_("[%u] restart current ani", stripe);
+            if (led_stripe[stripe].is_current_animation_running_before_switching)
+                animation_start(stripe);
+        }
     }
 
     /*
@@ -489,14 +518,9 @@ void animation_loop()
         }
     }
 
-    EVERY_N_SECONDS(1)
-    {
-        sensors_update();
-    }
-
     EVERY_N_SECONDS(10)
     {
-        // sensors_update();
+        sensors_update();
 
         for (uint8_t stripe = 0; stripe < MAX_LED_STRIPES; stripe++)
         {

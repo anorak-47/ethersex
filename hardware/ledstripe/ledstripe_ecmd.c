@@ -37,7 +37,7 @@
 #include "shell.h"
 #include "shell_animation.h"
 
-#define ECMD_LEDSTRIPE_OUTPUT_SIZE 300
+#define ECMD_LEDSTRIPE_OUTPUT_SIZE 350
 
 char* es_output_buffer = 0;
 uint16_t es_output_buffer_len = 0;
@@ -105,13 +105,17 @@ int16_t parse_cmd_ledstripe_animation(char *cmd, char *output, uint16_t len)
 
 	if (cmd[0] == ECMD_STATE_MAGIC)
 	{
+		LS_("magic");
 		char *token = strsep(&es_output_buffer, "\n");
-		if (token)
+		if (token != 0 && *token != '\0')
 		{
         	uint16_t l = strlen(token);
+        	LV_("tok %u %s", l, token);
         	strncpy(output, token, len-1);
 			return ECMD_AGAIN(l);
 		}
+
+		LS_("magic ok");
 		return ECMD_FINAL_OK;
 	}
 
