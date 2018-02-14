@@ -19,6 +19,7 @@ protected:
     uint8_t _option = 0;
 	uint8_t _startIndex = 0;
 	bool _changed = false;
+	CRGBPalette16 _palette;
 };
 
 } /* namespace fastled */

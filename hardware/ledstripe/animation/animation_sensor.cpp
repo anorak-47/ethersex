@@ -68,12 +68,25 @@ void AnimationSensor::initialize()
 	delta = 0;
     _old_delta = 0;
     _startIndex = 0;
+
+    setOption(5);
 }
 
 DEFINE_GRADIENT_PALETTE(heatmap_gp){0,   0,   0,   0,    // black
                                     128, 255, 0,   0,    // red
                                     224, 255, 255, 0,    // bright yellow
                                     255, 255, 255, 255}; // full white
+
+
+/*
+background: linear-gradient(to right, #FF0080, #FF8C00, #40E0D0);
+
+dusk
+background: linear-gradient(to right, #19547b, #ffd89b);
+
+sherbert
+background: linear-gradient(to right, #64f38c, #f79d00);
+*/
 
 void AnimationSensor::setOption(uint8_t option)
 {
@@ -99,6 +112,9 @@ void AnimationSensor::setOption(uint8_t option)
     case 5:
         _palette = heatmap_gp;
         break;
+    case 6:
+    	_palette = CRGBPalette16(CRGB(0x64, 0xf3, 0x8c), CRGB(0xf7, 0x9d, 0x00));
+    	break;
     default:
         LV_("opt oor %u", option);
         break;
@@ -131,19 +147,12 @@ void AnimationSensor::animate()
 {
     if (_option & 0x40)
     {
-    	/*
-        for (uint16_t i = 0; i < _led_count; i++)
-        {
-            _leds[i] = ColorFromPalette(_movingPalette, i + _startIndex);
-        }
-        */
-
-        fill_palette(_leds, _led_count, 0, _startIndex, _movingPalette, 255, LINEARBLEND);
+        fill_palette(_leds, _led_count, _startIndex, 1, _movingPalette, 255, LINEARBLEND);
         _startIndex++;
     }
     else
     {
-        fill_palette(_leds, _led_count, 0, 0, _movingPalette, 255, LINEARBLEND);
+        fill_palette(_leds, _led_count, 0, 1, _movingPalette, 255, LINEARBLEND);
     }
 
     if (_option & 0x80)

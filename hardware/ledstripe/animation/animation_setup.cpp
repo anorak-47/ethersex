@@ -4,6 +4,12 @@
 #include "animation_type.h"
 #include "crgbw.h"
 
+#include "../ledstripe_debug.h"
+
+#define FASTLED_CRGBW // SK6812 hack
+#define FASTLED_MIRROR_LED_STRIPE_0
+
+
 /* Pinout
  *
  * arduino variant: 40pin
@@ -51,11 +57,85 @@ PCINT7-0: D31-24   : bit 0
 #define DATA_PIN_0 24 // A0
 #define DATA_PIN_1 25 // A1
 
-#define FASTLED_MIRROR_LED_STRIPE_0
+#ifdef FASTLED_CRGBW
+
+// led stripe 0 has 261 leds
+// so nearest macht for the SK6812 hack is 264 leds
+
+#define NUM_LEDS_STRIPE_0_REAL (264)
+
+#ifdef FASTLED_MIRROR_LED_STRIPE_0
+#define NUM_LEDS_STRIPE_0 (NUM_LEDS_STRIPE_0_REAL / 2)
+#else
+#define NUM_LEDS_STRIPE_0 (NUM_LEDS_STRIPE_0_REAL)
+#endif
+
+CRGB leds_stripe_0[NUM_LEDS_STRIPE_0_REAL];
+CRGBW leds_stripe_0_rgbw[NUM_LEDS_STRIPE_0_REAL];
+CRGB *leds_stripe_0_rgb = (CRGB *)&leds_stripe_0_rgbw[0];
+
+#define NUM_LEDS_STRIPE_1 (19)
+#define NUM_LEDS_STRIPE_1_REAL (24)
+CRGB leds_stripe_1[NUM_LEDS_STRIPE_1_REAL];
+CRGBW leds_stripe_1_rgbw[NUM_LEDS_STRIPE_1_REAL];
+CRGB *leds_stripe_1_rgb = (CRGB *)&leds_stripe_1_rgbw[0];
+
+void animation_prepare_led_stripes_before_show()
+{
+#ifdef FASTLED_MIRROR_LED_STRIPE_0
+    for (uint8_t i = 0; i < NUM_LEDS_STRIPE_0; ++i)
+    {
+        leds_stripe_0_rgbw[i] = leds_stripe_0[i];
+        leds_stripe_0_rgbw[NUM_LEDS_STRIPE_0_REAL - i - 1] = leds_stripe_0_rgbw[i];
+    }
+#else
+    for (uint8_t i = 0; i < NUM_LEDS_STRIPE_0_REAL; ++i)
+    {
+        leds_stripe_0_rgbw[i] = leds_stripe_0[i];
+    }
+#endif
+
+    for (uint8_t i = 0; i < NUM_LEDS_STRIPE_1; ++i)
+    {
+        leds_stripe_1_rgbw[i] = leds_stripe_1[i];
+    }
+}
+
+void animation_led_stripe_setup()
+{
+    FastLED.addLeds<SK6812, DATA_PIN_0, RGB>(leds_stripe_0_rgb, getRGBWsize(NUM_LEDS_STRIPE_0_REAL)).setCorrection(TypicalSMD5050);
+    FastLED.addLeds<SK6812, DATA_PIN_1, RGB>(leds_stripe_1_rgb, getRGBWsize(NUM_LEDS_STRIPE_1_REAL)).setCorrection(TypicalSMD5050);
+
+	//FastLED.addLeds<SK6812, DATA_PIN_0, RGB>(leds_stripe_0_rgb, getRGBWsize(NUM_LEDS_STRIPE_0_REAL));
+    //FastLED.addLeds<SK6812, DATA_PIN_1, RGB>(leds_stripe_1_rgb, getRGBWsize(NUM_LEDS_STRIPE_1_REAL));
+
+    //FastLED.addLeds<WS2812B, DATA_PIN_0, RGB>(leds_stripe_0_rgb, getRGBWsize(NUM_LEDS_STRIPE_0_REAL));
+    //FastLED.addLeds<WS2812B, DATA_PIN_1, RGB>(leds_stripe_1_rgb, getRGBWsize(NUM_LEDS_STRIPE_1_REAL));
+
+    //FastLED.setDither(DISABLE_DITHER);
+    FastLED.setDither(BINARY_DITHER);
+
+    FastLED.setBrightness(FASTLED_DEFAULT_BRIGHTNESS);
+    FastLED.setMaxPowerInVoltsAndMilliamps(5, 6000);
+
+    led_stripe[0].leds = leds_stripe_0;
+    led_stripe[0].led_count = NUM_LEDS_STRIPE_0;
+
+    led_stripe[1].leds = leds_stripe_1;
+    led_stripe[1].led_count = NUM_LEDS_STRIPE_1;
+
+    fill_solid(leds_stripe_0, NUM_LEDS_STRIPE_0_REAL, CRGB::Black);
+    fill_solid(leds_stripe_1, NUM_LEDS_STRIPE_1_REAL, CRGB::Black);
+
+    animation_prepare_led_stripes_before_show();
+    FastLED.show();
+}
+
+#else
 
 #ifdef FASTLED_MIRROR_LED_STRIPE_0
 
-#define NUM_LEDS_STRIPE_0_FULL (300)
+#define NUM_LEDS_STRIPE_0_FULL (200)
 #define NUM_LEDS_STRIPE_0 (NUM_LEDS_STRIPE_0_FULL / 2)
 CRGB leds_stripe_0[NUM_LEDS_STRIPE_0_FULL];
 
@@ -67,7 +147,7 @@ CRGB leds_stripe_0[NUM_LEDS_STRIPE_0];
 
 #endif
 
-#define NUM_LEDS_STRIPE_1 (1)
+#define NUM_LEDS_STRIPE_1 (19)
 CRGB leds_stripe_1[NUM_LEDS_STRIPE_1];
 
 void animation_prepare_led_stripes_before_show()
@@ -99,3 +179,5 @@ void animation_led_stripe_setup()
 
     FastLED.show();
 }
+
+#endif

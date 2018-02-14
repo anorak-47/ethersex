@@ -219,8 +219,11 @@ bool animation_cmd_sensor(uint8_t argc, char **argv)
 {
     if (argc < 1)
     {
+    	CATOUT("sns\n");
         for (uint8_t index = 0; index < MAX_SENSORS; ++index)
-            CATSPRINTF("sns %u %u %u\n", index, sensors_get_value(index), sensors_get_fraction(index));
+        {
+            CATSPRINTF(".sns %u %d.%04u\n", index, sensors_get_value(index), (uint16_t)sensors_get_fraction(index) * 625);
+        }
         return true;
     }
 
@@ -251,7 +254,7 @@ bool animation_cmd_sensor(uint8_t argc, char **argv)
         sensors_set_fraction(index, fraction);
     }
 
-    SPRINTF("%u %u %u", index, sensors_get_value(index), sensors_get_fraction(index));
+    SPRINTF("%u %d.%04u", index, sensors_get_value(index), (uint16_t)sensors_get_fraction(index) * 625);
 
     return true;
 }
@@ -442,6 +445,11 @@ bool animation_cmd_configuration(uint8_t argc, char **argv)
         SPRINTF("%u %u %u", hsv[0], hsv[1], hsv[2]);
     }
 
+    else if (strcmp_P(cmd, PSTR("rst")) == 0)
+    {
+        CATOUT("ok");
+    }
+
     else
     {
         return false;
@@ -469,7 +477,7 @@ bool animation_cmd_cfg_animation(uint8_t argc, char **argv)
 
     char *cmd = argv[1];
 
-    CATSPRINTF("ani %u %s %u", stripe, cmd, animationid);
+    CATSPRINTF("ani %u %s %u ", stripe, cmd, animationid);
 
     if (argc == 4)
     {

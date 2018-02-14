@@ -12,6 +12,7 @@
 
 #define FASTLED_INTERNAL
 #include "FastLED.h"
+#include "Arduino.h"
 #include <inttypes.h>
 
 struct CRGBW
@@ -39,8 +40,18 @@ struct CRGBW
         uint8_t raw[4];
     };
 
-    CRGBW()
+    // default values are UNINITIALIZED
+	inline CRGBW() __attribute__((always_inline))
     {
+    }
+
+    /// allow copy construction
+	inline CRGBW(const CRGBW& rhs) __attribute__((always_inline))
+    {
+        r = rhs.r;
+        g = rhs.g;
+        b = rhs.b;
+        w = rhs.w;
     }
 
     CRGBW(uint8_t rd, uint8_t grn, uint8_t blu, uint8_t wht)
@@ -51,12 +62,25 @@ struct CRGBW
         w = wht;
     }
 
-    inline void operator=(const CRGB c) __attribute__((always_inline))
+    inline CRGBW& operator= (const CRGBW& rhs) __attribute__((always_inline))
     {
-        this->r = c.r;
-        this->g = c.g;
-        this->b = c.b;
-        this->white = 0;
+        r = rhs.r;
+        g = rhs.g;
+        b = rhs.b;
+        w = rhs.w;
+        return *this;
+    }
+
+    inline CRGBW& operator= (const CRGB& rhs) __attribute__((always_inline))
+    {
+    	uint8_t minc = min(rhs.r, rhs.g);
+    	minc = min(rhs.b, minc);
+
+        r = rhs.r - minc;
+        g = rhs.g - minc;
+        b = rhs.b - minc;
+        w = minc;
+        return *this;
     }
 };
 

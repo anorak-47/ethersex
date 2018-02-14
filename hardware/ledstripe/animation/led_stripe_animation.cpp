@@ -15,6 +15,7 @@ LedStripeAnimation::~LedStripeAnimation()
 
 void LedStripeAnimation::initialize()
 {
+	fill_solid(_leds, _led_count, CRGB::Black);
 	setOption(0);
 }
 

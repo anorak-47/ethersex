@@ -11,7 +11,7 @@ extern "C" {
 #define MAX_SENSORS_MCP (4)
 
 #define ADC_OFFSET 4
-#define ACD_AVG_LOOP 10
+#define ACD_AVG_LOOP 3
 
 sensor_type sensors[MAX_SENSORS];
 MCP980X mcp9801;

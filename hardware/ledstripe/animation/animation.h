@@ -68,6 +68,8 @@ bool animation_get_autoswitch_sensor_animation(uint8_t stripe);
 void animation_set_global_brightness(uint8_t brightness);
 uint8_t animation_get_global_brightness(void);
 
+void animation_led_stripe_reset_stripe(uint8_t stripe);
+
 #else
 #define animation_init() do {} while(0)
 #define animation_loop() do {} while(0)
