@@ -222,7 +222,7 @@ bool animation_cmd_sensor(uint8_t argc, char **argv)
     	CATOUT("sns\n");
         for (uint8_t index = 0; index < MAX_SENSORS; ++index)
         {
-            CATSPRINTF(".sns %u %d.%04u\n", index, sensors_get_value(index), (uint16_t)sensors_get_fraction(index) * 625);
+            CATSPRINTF(".sns %u %d.%04u\n", index, sensors_get_value8(index), (uint16_t)sensors_get_fraction(index) * 625);
         }
         return true;
     }
@@ -243,18 +243,18 @@ bool animation_cmd_sensor(uint8_t argc, char **argv)
     if (argc == 2)
     {
         int8_t value = atoi(argv[1]);
-        sensors_set_value(index, value);
+        sensors_set_value8(index, value);
     }
 
     else if (argc == 3)
     {
         int8_t value = atoi(argv[1]);
         uint8_t fraction = atoi(argv[2]);
-        sensors_set_value(index, value);
+        sensors_set_value8(index, value);
         sensors_set_fraction(index, fraction);
     }
 
-    SPRINTF("%u %d.%04u", index, sensors_get_value(index), (uint16_t)sensors_get_fraction(index) * 625);
+    SPRINTF("%u %d.%04u", index, sensors_get_value8(index), (uint16_t)sensors_get_fraction(index) * 625);
 
     return true;
 }

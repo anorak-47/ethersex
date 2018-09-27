@@ -11,7 +11,7 @@
 #if FASTLED_SUPPORTED
 
 //#define ANIMATION_LIMIT_FPS_BY_TIMER1
-#define ANIMATION_SHOW_FPS
+//#define ANIMATION_SHOW_FPS
 
 #ifdef ANIMATION_LIMIT_FPS_BY_TIMER1
 #include "timer.h"
@@ -409,20 +409,17 @@ bool is_sensor_animation(uint8_t stripe)
 {
     animation_names sensor_animation = animation_get_sensor_animation(stripe);
 
-    //LV_("[%u] idx %u %u %u", stripe, sensor_animation, animation_get_sensor_index(stripe, sensor_animation, SENSOR_IDX_CURRENT),
-    //    animation_get_sensor_index(stripe, sensor_animation, SENSOR_IDX_REF));
+    int16_t sns_current_value = sensors_get_value16(animation_get_sensor_index(stripe, sensor_animation, SENSOR_IDX_CURRENT));
+    int16_t sns_ref_value = sensors_get_value16(animation_get_sensor_index(stripe, sensor_animation, SENSOR_IDX_REF));
 
-    int8_t sns_current_value = sensors_get_value(animation_get_sensor_index(stripe, sensor_animation, SENSOR_IDX_CURRENT));
-    int8_t sns_ref_value = sensors_get_value(animation_get_sensor_index(stripe, sensor_animation, SENSOR_IDX_REF));
+    if (sns_current_value < sns_ref_value)
+        return false;
 
-    if (sns_current_value < TREF)
-        sns_current_value = TREF;
+    int16_t delta = sns_current_value - sns_ref_value;
 
-    int8_t delta = sns_current_value - sns_ref_value;
+    LV_("[%u] sns %i %i d:%i", stripe, sns_current_value, sns_ref_value, delta);
 
-    //LV_("[%u] sns %i %i d:%i", stripe, sns_current_value, sns_ref_value, delta);
-
-    return (delta > TDELTA);
+    return (delta > (TDELTA));
 }
 
 void switch_to_sensor_animation(uint8_t stripe)
@@ -445,21 +442,26 @@ void switch_to_sensor_animation(uint8_t stripe)
 
     if (requested_animation != animation_get_active_animation(stripe))
     {
-        LV_("[%u] run animation %u", stripe, requested_animation);
+        //LV_("[%u] run animation %u", stripe, requested_animation);
+
+        bool animation_was_running = animation_get_running(stripe);
 
         animation_stop(stripe);
         animation_set_for_stripe(stripe, requested_animation);
 
         if (requested_animation == animation_get_sensor_animation(stripe))
         {
-            led_stripe[stripe].is_current_animation_running_before_switching = led_stripe[stripe].is_running;
+            led_stripe[stripe].is_current_animation_running_before_switching = animation_was_running;
+            //LV_("[%u] cur run %u", stripe, led_stripe[stripe].is_current_animation_running_before_switching);
             animation_start(stripe);
         }
         else
         {
-            LV_("[%u] restart current ani", stripe);
             if (led_stripe[stripe].is_current_animation_running_before_switching)
+            {
+            	//LV_("[%u] restart cur ani", stripe);
                 animation_start(stripe);
+            }
         }
     }
 }

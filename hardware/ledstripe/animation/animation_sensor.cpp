@@ -4,8 +4,8 @@
 
 #include "../ledstripe_debug.h"
 
-//#define PMAX (255 - (256 / 16))
-#define PMAX 255
+#define PMAX (256 - (256 / 16))
+//#define PMAX 255
 #define TSTEPS ((PMAX + 1) / (TMAX - TREF))
 
 namespace fastled
@@ -19,57 +19,14 @@ AnimationSensor::~AnimationSensor()
 {
 }
 
-void AnimationSensor::updateSensors()
-{
-    sns_current_value = sensors_get_value(_animation_info->sensor_index[SENSOR_IDX_CURRENT]);
-    sns_ref_value = sensors_get_value(_animation_info->sensor_index[SENSOR_IDX_REF]);
-
-    if (sns_current_value < TREF)
-        sns_current_value = TREF;
-
-    delta = sns_current_value - sns_ref_value;
-}
-
-bool AnimationSensor::sensorsChanged()
-{
-    int8_t delta = sns_current_value - sns_ref_value;
-    bool changed = (_old_delta != delta);
-    _old_delta = delta;
-
-    if (changed)
-    	updatePalette();
-
-    return changed || animateByOptionValue();
-}
-
-bool AnimationSensor::animateByOptionValue()
-{
-    return (_option & 0x80) || (_option & 0x40);
-}
-
-void AnimationSensor::updatePalette()
-{
-    uint16_t startpos = (sns_current_value - TREF) * TSTEPS;
-    uint16_t endpos = (sns_current_value - TREF + 1) * TSTEPS;
-
-    if (endpos > PMAX)
-    {
-        endpos = PMAX;
-        startpos = endpos - TSTEPS;
-    }
-
-    LV_("snsa: c:%i r:%i %u-%u", sns_current_value, sns_ref_value, startpos, endpos);
-
-    _movingPalette = CRGBPalette16(ColorFromPalette(_palette, startpos), ColorFromPalette(_palette, endpos));
-}
-
 void AnimationSensor::initialize()
 {
-	delta = 0;
-    _old_delta = 0;
+    delta = 0;
+    old_delta = 0;
     _startIndex = 0;
 
-    setOption(5);
+    setOption(0);
+    _movingPalette = CRGBPalette16(CRGB::DarkSlateBlue, CRGB::DarkSlateBlue);
 }
 
 DEFINE_GRADIENT_PALETTE(heatmap_gp){0,   0,   0,   0,    // black
@@ -77,8 +34,31 @@ DEFINE_GRADIENT_PALETTE(heatmap_gp){0,   0,   0,   0,    // black
                                     224, 255, 255, 0,    // bright yellow
                                     255, 255, 255, 255}; // full white
 
+DEFINE_GRADIENT_PALETTE(sherbert_gp){0,   0x64, 0xf3, 0x8c,  // 0
+                                     255, 0xf7, 0x9d, 0x00}; // 255
+
+DEFINE_GRADIENT_PALETTE(summer_gp){0,   0x22, 0xc1, 0xc3,  // 0
+                                   255, 0xfd, 0xbb, 0x2d}; // 255
+
+DEFINE_GRADIENT_PALETTE(sunset_gp){0,   0x0b, 0x48, 0x6b,  // 0
+                                   255, 0xf5, 0x62, 0x17}; // 255
+
+DEFINE_GRADIENT_PALETTE(bradyfun_gp){0,   0x00, 0xc3, 0xff,  // 0
+                                     255, 0xff, 0xff, 0x1c}; // 255
+
+DEFINE_GRADIENT_PALETTE(dusk_gp){0,   0x19, 0x54, 0x7b,  // 0
+                                 255, 0xff, 0xd8, 0x9b}; // 255
+
+DEFINE_GRADIENT_PALETTE(pinky_gp){0,   64,  224, 208, // 0
+                                  127, 255, 0,   128, // 127
+                                  230, 255, 140, 0,   // 230
+                                  255, 255, 140, 0};  // 255
 
 /*
+ * https://uigradients.com
+ * http://angrytools.com/gradient/
+ * https://www.cssmatic.com/gradient-generator
+ *
 background: linear-gradient(to right, #FF0080, #FF8C00, #40E0D0);
 
 dusk
@@ -92,35 +72,81 @@ void AnimationSensor::setOption(uint8_t option)
 {
     _option = option;
 
+    LV_("sns opt %u", _option);
+
     switch (option & 0x3F)
     {
     case 0:
-        _palette = CHSVPalette16(_animation_info->hsv[1], _animation_info->hsv[0]);
+        _palette = bradyfun_gp;
         break;
     case 1:
-        _palette = CHSVPalette16(_animation_info->hsv[0], _animation_info->hsv[1]);
+        _palette = sunset_gp;
         break;
     case 2:
-        _palette = CHSVPalette16(CHSV(160, 192, 64), CHSV(64, 255, 255));
+        _palette = summer_gp;
         break;
     case 3:
-        _palette = CHSVPalette16(CHSV(64, 255, 255), CHSV(160, 192, 64));
+        _palette = sherbert_gp;
         break;
     case 4:
-        _palette = HeatColors_p;
+        _palette = dusk_gp;
         break;
     case 5:
-        _palette = heatmap_gp;
+        _palette = pinky_gp;
         break;
     case 6:
-    	_palette = CRGBPalette16(CRGB(0x64, 0xf3, 0x8c), CRGB(0xf7, 0x9d, 0x00));
-    	break;
+        _palette = CHSVPalette16(_animation_info->hsv[1], _animation_info->hsv[0]);
+        break;
+    case 7:
+        _palette = CHSVPalette16(_animation_info->hsv[0], _animation_info->hsv[1]);
+        break;
+    case 8:
+        _palette = heatmap_gp;
+        break;
     default:
         LV_("opt oor %u", option);
         break;
     }
 
-    _old_delta = 0;
+    old_delta = 0;
+}
+
+void AnimationSensor::updateSensors()
+{
+    sns_current_value = sensors_get_value8(_animation_info->sensor_index[SENSOR_IDX_CURRENT]);
+    sns_ref_value = sensors_get_value8(_animation_info->sensor_index[SENSOR_IDX_REF]);
+
+    if (sns_current_value < sns_ref_value)
+        sns_current_value = sns_ref_value;
+
+    old_delta = delta;
+    delta = sns_current_value - sns_ref_value;
+}
+
+bool AnimationSensor::sensorsChanged()
+{
+    return (old_delta != delta);
+}
+
+bool AnimationSensor::animateByOptionValue()
+{
+    return (_option & 0x80) || (_option & 0x40);
+}
+
+void AnimationSensor::updatePalette()
+{
+    uint16_t startpos = delta * TSTEPS;
+    uint16_t endpos = (delta + 1) * TSTEPS;
+
+    if (endpos > PMAX)
+    {
+        endpos = PMAX;
+        startpos = endpos - TSTEPS;
+    }
+
+    LV_("snsa: d:%u %u-%u", delta, startpos, endpos);
+
+    _targetPalette = CRGBPalette16(ColorFromPalette(_palette, startpos), ColorFromPalette(_palette, endpos));
 }
 
 void AnimationSensor::update()
@@ -145,6 +171,11 @@ void AnimationSensor::addGlitterAt(uint16_t led, fract8 chanceOfGlitter)
 
 void AnimationSensor::animate()
 {
+    // EVERY_N_MILLISECONDS(20)
+    {
+        nblendPaletteTowardPalette(_movingPalette, _targetPalette, 10);
+    }
+
     if (_option & 0x40)
     {
         fill_palette(_leds, _led_count, _startIndex, 1, _movingPalette, 255, LINEARBLEND);
@@ -152,7 +183,7 @@ void AnimationSensor::animate()
     }
     else
     {
-        fill_palette(_leds, _led_count, 0, 1, _movingPalette, 255, LINEARBLEND);
+        fill_palette(_leds, _led_count, 0, 2, _movingPalette, 255, LINEARBLEND);
     }
 
     if (_option & 0x80)
@@ -169,6 +200,9 @@ bool AnimationSensor::loop()
     updateSensors();
 
     if (sensorsChanged())
+        updatePalette();
+
+    // if (sensorsChanged() || animateByOptionValue())
     {
         animate();
         return true;

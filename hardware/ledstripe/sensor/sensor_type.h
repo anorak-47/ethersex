@@ -4,8 +4,7 @@
 
 struct _s_sensor_type
 {
-    int8_t value;
-    uint8_t fraction;
+    int16_t value;
     bool isvalid;
 };
 

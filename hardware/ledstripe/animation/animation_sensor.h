@@ -28,14 +28,15 @@ protected:
 
 	uint8_t _startIndex = 0;
 	uint8_t _option = 0;
-	int8_t _old_delta = 0;
 
 	CRGBPalette16 _palette;
 	CRGBPalette16 _movingPalette;
+	CRGBPalette16 _targetPalette;
 
 	int8_t sns_current_value = 0;
 	int8_t sns_ref_value = 0;
 	int8_t delta = 0;
+	int8_t old_delta = 0;
 };
 
 } /* namespace fastled */

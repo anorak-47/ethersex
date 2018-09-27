@@ -36,6 +36,7 @@
 #include "ledstripe_debug.h"
 #include "shell.h"
 #include "shell_animation.h"
+#include "sensor.h"
 
 #define ECMD_LEDSTRIPE_OUTPUT_SIZE 350
 
@@ -98,6 +99,27 @@ bool shell_command(uint8_t *buffer, uint8_t length)
     return sub_shell_command(animation_shell_cmd, argc, argv);
 }
 
+int16_t parse_cmd_ledstripe_sensor(char *cmd, char *output, uint16_t len)
+{
+    // skip leading spaces
+    while (*cmd == ' ')
+        cmd++;
+
+    uint8_t index;
+    sscanf_P(cmd, PSTR("%hhu"), &index);
+    if (index >= MAX_SENSORS)
+      return ECMD_ERR_PARSE_ERROR;
+
+    if (!sensor_is_valid(index))
+    	return ECMD_FINAL(snprintf_P(output, len, PSTR("no sensor detected")));
+
+#ifdef ECMD_MIRROR_REQUEST
+    return ECMD_FINAL(snprintf_P(output, len, PSTR("sns %u %d.%04u"), index, sensors_get_value8(index), (uint16_t)sensors_get_fraction(index) * 625));
+#else
+    return ECMD_FINAL(snprintf_P(output, len, PSTR("%d.%04u"), sensors_get_value(index), (uint16_t)sensors_get_fraction(index) * 625));
+#endif
+}
+
 int16_t parse_cmd_ledstripe_animation(char *cmd, char *output, uint16_t len)
 {
 	char *ocmd = cmd;
@@ -105,17 +127,17 @@ int16_t parse_cmd_ledstripe_animation(char *cmd, char *output, uint16_t len)
 
 	if (cmd[0] == ECMD_STATE_MAGIC)
 	{
-		LS_("magic");
+		//LS_("magic");
 		char *token = strsep(&es_output_buffer, "\n");
 		if (token != 0 && *token != '\0')
 		{
         	uint16_t l = strlen(token);
-        	LV_("tok %u %s", l, token);
+        	//LV_("tok %u %s", l, token);
         	strncpy(output, token, len-1);
 			return ECMD_AGAIN(l);
 		}
 
-		LS_("magic ok");
+		//LS_("magic ok");
 		return ECMD_FINAL_OK;
 	}
 
@@ -132,10 +154,10 @@ int16_t parse_cmd_ledstripe_animation(char *cmd, char *output, uint16_t len)
 
     	if (strlen(es_output_buffer) >= len)
     	{
-    		LV_("ecmd eso %u", strlen(es_output_buffer));
+    		//LV_("ecmd eso %u", strlen(es_output_buffer));
     		char *token = strsep(&es_output_buffer, "\n");
         	uint16_t l = strlen(token);
-        	LV_("tok %u %s", l, token);
+        	//LV_("tok %u %s", l, token);
         	strncpy(output, token, len-1);
 
         	ocmd[0] = ECMD_STATE_MAGIC;
@@ -157,5 +179,6 @@ int16_t parse_cmd_ledstripe_animation(char *cmd, char *output, uint16_t len)
   block(LEDStripe)
   ecmd_ifdef(LEDSTRIPE_SUPPORT)
     ecmd_feature(ledstripe_animation, "str", STRING, Control led stripe animation)
+    ecmd_feature(ledstripe_sensor, "sns", STRING, Read temperature sensor value)
   ecmd_endif()
 */
