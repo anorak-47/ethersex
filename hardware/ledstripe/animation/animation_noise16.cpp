@@ -15,13 +15,18 @@
 namespace fastled
 {
 
-AnimationNoise16::AnimationNoise16(CRGB *leds, uint16_t led_count, animation *animation_info) : LedStripeAnimation(leds, led_count, animation_info)
+AnimationNoise16::AnimationNoise16(CRGB *leds, uint16_t led_count, animation_configuration_t *animation_info) : LedStripeAnimation(leds, led_count, animation_info)
 {
     currentBlending = LINEARBLEND;
 }
 
 AnimationNoise16::~AnimationNoise16()
 {
+}
+
+static LedStripeAnimation *AnimationNoise16::create(CRGB *leds, uint16_t led_count, animation_configuration_t *animation_info)
+{
+    return new AnimationNoise16(leds, led_count, animation_info);
 }
 
 void AnimationNoise16::initialize()
@@ -31,10 +36,10 @@ void AnimationNoise16::initialize()
 
 void AnimationNoise16::setOption(uint8_t option)
 {
-	_option = option;
+    _option = option;
 
-	if (option > 2)
-		_option = 0;
+    if (option > 2)
+        _option = 0;
 }
 
 void AnimationNoise16::noise16_1()
@@ -125,7 +130,7 @@ bool AnimationNoise16::loop()
 
     EVERY_N_SECONDS(5)
     {
-    	// Change the target palette to a random one every 5 seconds.
+        // Change the target palette to a random one every 5 seconds.
         targetPalette = CRGBPalette16(CHSV(random8(), 255, random8(128, 255)), CHSV(random8(), 255, random8(128, 255)),
                                       CHSV(random8(), 192, random8(128, 255)), CHSV(random8(), 255, random8(128, 255)));
     }
@@ -133,14 +138,14 @@ bool AnimationNoise16::loop()
     switch (_option)
     {
     case 0:
-    	noise16_1();
-    	break;
+        noise16_1();
+        break;
     case 1:
-    	noise16_2();
-    	break;
+        noise16_2();
+        break;
     case 2:
-    	noise16_3();
-    	break;
+        noise16_3();
+        break;
     }
 
     return true;

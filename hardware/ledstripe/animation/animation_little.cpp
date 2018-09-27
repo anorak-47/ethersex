@@ -4,14 +4,20 @@
 namespace fastled
 {
 
-AnimationLittle::AnimationLittle(CRGB *leds, uint16_t led_count, animation *animation_info)
-    : LedStripeAnimation(leds, led_count, animation_info)
+AnimationLittle::AnimationLittle(CRGB *leds, uint16_t led_count, animation_configuration_t *animation_info) : LedStripeAnimation(leds, led_count, animation_info)
 {
 }
 
 AnimationLittle::~AnimationLittle()
 {
 }
+
+/*
+static LedStripeAnimation *AnimationLittle::create(CRGB *leds, uint16_t led_count, animation *animation_info)
+{
+    return new AnimationLittle(leds, led_count, animation_info);
+}
+*/
 
 void AnimationLittle::setOption(uint8_t option)
 {
@@ -90,26 +96,47 @@ bool AnimationLittle::loop()
     switch (_option)
     {
     case 0:
-    	rainbow();
-    	break;
+        rainbow();
+        break;
     case 1:
-    	rainbowWithGlitter();
-    	break;
+        rainbowWithGlitter();
+        break;
     case 2:
-    	confetti();
-    	break;
+        confetti();
+        break;
     case 3:
-    	sinelon();
-    	break;
+        sinelon();
+        break;
     case 4:
-    	bpm();
-    	break;
+        bpm();
+        break;
     case 5:
-    	juggle();
-    	break;
+        juggle();
+        break;
     }
 
     return (_option <= 5);
 }
+
+#define LITTLE_IMPL(name, loop_function)                                                                                                             \
+    LedStripeAnimation *AnimationLittle##name::create(CRGB *leds, uint16_t led_count, animation *animation_info)                                     \
+    {                                                                                                                                                \
+        return new AnimationLittle##name(leds, led_count, animation_info);                                                                           \
+    }                                                                                                                                                \
+    AnimationLittle##name::~AnimationLittle##name()                                                                                                  \
+    {                                                                                                                                                \
+    }                                                                                                                                                \
+    bool AnimationLittle##name::loop()                                                                                                               \
+    {                                                                                                                                                \
+        loop_function();                                                                                                                             \
+        return true;                                                                                                                                 \
+    }
+
+LITTLE_IMPL(Rainbow, rainbow)
+LITTLE_IMPL(RainbowWithGlitter, rainbowWithGlitter)
+LITTLE_IMPL(Confetti, confetti)
+LITTLE_IMPL(Sinelon, sinelon)
+LITTLE_IMPL(Bpm, bpm)
+LITTLE_IMPL(Juggle, juggle)
 
 } /* namespace fastled */

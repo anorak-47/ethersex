@@ -9,13 +9,14 @@ namespace fastled
 class AnimationInoisePal : public LedStripeAnimation
 {
 public:
-    AnimationInoisePal(CRGB *leds, uint16_t led_count, animation *animation_info);
+    static LedStripeAnimation *create(CRGB *leds, uint16_t led_count, animation_configuration_t *animation_info);
     virtual ~AnimationInoisePal();
 
     virtual void initialize() override;
     virtual bool loop() override;
 
 protected:
+    AnimationInoisePal(CRGB *leds, uint16_t led_count, animation_configuration_t *animation_info);
     void fillnoise8();
 
     CRGBPalette16 currentPalette;

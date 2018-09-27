@@ -15,23 +15,28 @@ LedStripeAnimation::~LedStripeAnimation()
 
 void LedStripeAnimation::initialize()
 {
-	fill_solid(_leds, _led_count, CRGB::Black);
-	setOption(0);
+    fill_solid(_leds, _led_count, CRGB::Black);
+    setOption(0);
 }
 
 void LedStripeAnimation::deinitialize()
 {
-	fill_solid(_leds, _led_count, CRGB::Black);
+    fill_solid(_leds, _led_count, CRGB::Black);
 }
 
 void LedStripeAnimation::setOption(uint8_t)
 {
-	// do nothing
+    // do nothing
+}
+
+void LedStripeAnimation::setOption2(uint8_t)
+{
+    // do nothing
 }
 
 void LedStripeAnimation::update()
 {
-	// do nothing
+    // do nothing
 }
 
 } /* namespace fastled */

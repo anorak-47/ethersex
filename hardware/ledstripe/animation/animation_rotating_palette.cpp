@@ -27,13 +27,18 @@
 namespace fastled
 {
 
-AnimationRotatingPalette::AnimationRotatingPalette(CRGB *leds, uint16_t led_count, animation *animation_info)
+AnimationRotatingPalette::AnimationRotatingPalette(CRGB *leds, uint16_t led_count, animation_configuration_t *animation_info)
     : LedStripeAnimation(leds, led_count, animation_info)
 {
 }
 
 AnimationRotatingPalette::~AnimationRotatingPalette()
 {
+}
+
+static LedStripeAnimation *AnimationRotatingPalette::create(CRGB *leds, uint16_t led_count, animation_configuration_t *animation_info)
+{
+    return new AnimationRotatingPalette(leds, led_count, animation_info);
 }
 
 void AnimationRotatingPalette::fillLEDsFromPaletteColors(uint8_t colorIndex)

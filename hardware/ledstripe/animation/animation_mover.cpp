@@ -13,12 +13,17 @@ You should be able to add more variables, such as hues, hue rotation, direction 
 namespace fastled
 {
 
-AnimationMover::AnimationMover(CRGB *leds, uint16_t led_count, animation *animation_info) : LedStripeAnimation(leds, led_count, animation_info)
+AnimationMover::AnimationMover(CRGB *leds, uint16_t led_count, animation_configuration_t *animation_info) : LedStripeAnimation(leds, led_count, animation_info)
 {
 }
 
 AnimationMover::~AnimationMover()
 {
+}
+
+static LedStripeAnimation *AnimationMover::create(CRGB *leds, uint16_t led_count, animation_configuration_t *animation_info)
+{
+    return new AnimationMover(leds, led_count, animation_info);
 }
 
 void AnimationMover::initialize()
@@ -30,7 +35,7 @@ void AnimationMover::mover()
     static uint8_t hue = 0;
     for (int i = 0; i < _led_count; i++)
     {
-    	fadeToBlackBy(_leds, _led_count, thisfade); // Low values = slower fade.
+        fadeToBlackBy(_leds, _led_count, thisfade); // Low values = slower fade.
         _leds[i] += CHSV(hue, 255, 255);
         _leds[(i + 5) % _led_count] += CHSV(hue + 85, 255, 255);   // We use modulus so that the location is between 0 and _led_count
         _leds[(i + 10) % _led_count] += CHSV(hue + 170, 255, 255); // Same here.

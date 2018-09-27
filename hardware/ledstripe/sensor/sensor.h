@@ -12,6 +12,17 @@ extern "C" {
 #define TREF 20
 #define TDELTA 2
 
+// Sensor 0: temperature bathtub
+// Sensor 1: temperature at floor under bathtub (reference)
+// Sensor 2: temperature at shower drain
+// Sensor 3: temperature of power supply
+// Sensor 4: adc 4
+
+#define SENSOR_BATHTUB 0
+#define SENSOR_SHOWER 2
+#define SENSOR_REFERENCE 1
+#define SENSOR_SUPPLY 3
+
 void sensors_init(void);
 void sensors_update(void);
 

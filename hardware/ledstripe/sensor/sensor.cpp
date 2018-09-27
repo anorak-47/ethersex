@@ -10,6 +10,7 @@ extern "C" {
 #define MCP9801_BASE_ADDRESS (0x48)
 #define MAX_SENSORS_MCP (4)
 
+//#define ADC_ENABLED
 #define ADC_OFFSET 4
 #define ACD_AVG_LOOP 3
 
@@ -76,12 +77,12 @@ void sensors_update(void)
         // fraction * 0.0625
     }
 
-#if (MAX_SENSORS - MAX_SENSORS_MCP > 0)
+#if defined(ADC_ENABLED) && (MAX_SENSORS - MAX_SENSORS_MCP > 0)
     for (uint8_t i = MAX_SENSORS_MCP; i < MAX_SENSORS; i++)
     {
         uint16_t adc_value = 0;
         for (uint8_t a = 0; a < ACD_AVG_LOOP; a++)
-        	adc_value += adc_get(i - MAX_SENSORS_MCP + ADC_OFFSET);
+            adc_value += adc_get(i - MAX_SENSORS_MCP + ADC_OFFSET);
         adc_value /= ACD_AVG_LOOP;
         sensors[i].value = map(adc_value, 0, 1023, 10, 45);
         //LV_("adc %u: %u %i", i - MAX_SENSORS_MCP, adc_value, sensors[i].value);

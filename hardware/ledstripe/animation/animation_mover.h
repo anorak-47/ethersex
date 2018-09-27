@@ -8,13 +8,15 @@ namespace fastled
 class AnimationMover : public LedStripeAnimation
 {
 public:
-    AnimationMover(CRGB *leds, uint16_t led_count, animation *animation_info);
+    static LedStripeAnimation *create(CRGB *leds, uint16_t led_count, animation_configuration_t *animation_info);
     virtual ~AnimationMover();
 
     virtual void initialize() override;
     virtual bool loop() override;
 
 protected:
+    AnimationMover(CRGB *leds, uint16_t led_count, animation_configuration_t *animation_info);
+
     void mover();
     void ChangeMe();
 

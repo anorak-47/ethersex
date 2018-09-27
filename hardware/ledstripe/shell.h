@@ -10,7 +10,7 @@
 
 struct _s_shell_cmd
 {
-    char *name;
+    char *cmd;
     bool (*func)(uint8_t argc, char **argv);
 #ifdef SHELL_ARGS_HELP_SUPPORTED
     char *args_help;
@@ -18,22 +18,25 @@ struct _s_shell_cmd
 #ifdef SHELL_HELP_SUPPORTED
     char *cmd_help;
 #endif
+#ifdef SHELL_ARGS_HELP_SUPPORTED
+    void (*func_help)();
+#endif
 };
 
 #if defined(SHELL_ARGS_HELP_SUPPORTED) && defined(SHELL_HELP_SUPPORTED)
-#define SHELLCMD(arg_name, arg_func, arg_args, arg_help) \
-		{ arg_name, arg_func, arg_args, arg_help }
+#define SHELLCMD(arg_name, arg_func, arg_args, arg_help, args_func_help) \
+        { arg_name, arg_func, arg_args, arg_help, args_func_help }
 #else
 #if defined(SHELL_ARGS_HELP_SUPPORTED)
-#define SHELLCMD(arg_name, arg_func, arg_args, arg_help) \
-		{ arg_name, arg_func, arg_args }
+#define SHELLCMD(arg_name, arg_func, arg_args, arg_help, args_func_help) \
+        { arg_name, arg_func, arg_args, args_func_help }
 #else
 #if defined(SHELL_HELP_SUPPORTED)
-#define SHELLCMD(arg_name, arg_func, arg_args, arg_help) \
-		{ arg_name, arg_func, arg_help }
+#define SHELLCMD(arg_name, arg_func, arg_args, arg_help, args_func_help) \
+        { arg_name, arg_func, arg_help }
 #else
-#define SHELLCMD(arg_name, arg_func, arg_args, arg_help) \
-		{ arg_name, arg_func }
+#define SHELLCMD(arg_name, arg_func, arg_args, arg_help, args_func_help) \
+        { arg_name, arg_func }
 #endif
 #endif
 #endif

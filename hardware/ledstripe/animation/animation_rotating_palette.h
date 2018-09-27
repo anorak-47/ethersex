@@ -9,20 +9,22 @@ namespace fastled
 class AnimationRotatingPalette : public LedStripeAnimation
 {
 public:
-    AnimationRotatingPalette(CRGB *leds, uint16_t led_count, animation *animation_info);
+    static LedStripeAnimation *create(CRGB *leds, uint16_t led_count, animation_configuration_t *animation_info);
     virtual ~AnimationRotatingPalette();
 
     virtual bool loop() override;
     virtual void setOption(uint8_t option) override;
 
 protected:
+    AnimationRotatingPalette(CRGB *leds, uint16_t led_count, animation_configuration_t *animation_info);
+
     void fillLEDsFromPaletteColors(uint8_t colorIndex);
     void SetupPurpleAndGreenPalette();
     void SetupTotallyRandomPalette();
 
     CRGBPalette16 currentPalette;
     TBlendType currentBlending = NOBLEND;
-	uint8_t _startIndex = 0;
+    uint8_t _startIndex = 0;
 };
 
 } /* namespace fastled */

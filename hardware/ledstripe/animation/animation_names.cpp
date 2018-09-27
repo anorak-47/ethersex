@@ -14,89 +14,134 @@
 #include "animation_sensor.h"
 #include "animation_noise16.h"
 #include "animation_rainbow_beat.h"
-
+#include "animation_twinkles.h"
 #include "../ledstripe_debug.h"
 
 #if FASTLED_SUPPORTED
 
 using namespace fastled;
 
-void animation_set_for_stripe(uint8_t stripe, animation_names animation)
+struct animation_description_s
+{
+    const char *name;
+    const char *description;
+    const char *options;
+    void (*factory_function)(CRGB *leds, uint16_t led_count, animation_configuration_t *animation_info);
+};
+
+using animation_description_t = struct animation_description_s;
+
+animation_description_t animation_description;
+
+#define TWINKLE(factory_function, name, description) {name, , description, 0, factory_function},
+
+const animation_description_t animation_description_list[ANIMATION_COUNT] PROGMEM = {
+    {"basic", "Basic tests", "0:color, 1:blink, 2:mover", &AnimationBasicTests::create},
+
+    //{"little", "Some little animations", "0:Rainbow, 1:Rainbow w/Glitter, 2:Confetti, 3:Sinelon, 4:BPM, 5:Juggle", &AnimationLittle::create},
+
+    {"rainbow", "Rainbow", 0, &AnimationLittleRainbow::create},
+    {"glitter", "Rainbow with Glitter", 0, &AnimationLittleRainbowWithGlitter::create},
+    {"confetti", "Confetti", 0, &AnimationLittleConfetti::create},
+    {"sinelon", "Sinelon", 0, &AnimationLittleSinelon::create},
+    {"bpm", "Bpm", 0, &AnimationLittleBpm::create},
+    {"juggle", "Juggle", 0, &AnimationLittleJuggle::create},
+
+    {"gradient", "Gradient co0/co1", 0, &AnimationGradient::create},
+    {"palette", "Rotating Palettes", "0:Rainbow, 1:Stripes, 2:LinearStripes, 3:Clouds, 4:Party, 5:PurpleGreen, 6:Random ",
+     &AnimationRotatingPalette::create},
+
+    {"fire", "Fire2012", "1:Heat, 2:red/yellow, 3:blue/aqua, 4:red/white", &AnimationFire2012::create},
+    {"inoise", "Noise on Palettes", 0, &AnimationInoiseFire::create},
+    {"imover", "Noisy pixel mover", 0, &AnimationInoiseMover::create},
+    {"pal", "Palette blending", 0, &AnimationInoisePal::create},
+    {"dotbeat", "Dot and beatsin8", 0, &AnimationDotBeat::create},
+    {"serendipitous", "1D Serendipitous Circles", 0, &AnimationSerendipitous::create},
+    {"mover", "Moving pixel", 0, &AnimationMover::create},
+    {"beatwave", "Coloured wave values from several beatsin8 functions", 0, &AnimationBeatWave::create},
+    {"noise16", "A 16 bit noise routine with palettes", 0, &AnimationNoise16::create},
+    {"rainbow", "Moving rainbow (beatsin8)", 0, &AnimationRainbowBeat::create},
+
+    // Twinkle
+    {"rainbowTwinkles", "Rainbow Twinkles", 0, &AnimationTwinklesRainbowTwinkles::create},
+    {"snowTwinkles", "Snow Twinkles", 0, &AnimationTwinklesSnowTwinkles::create},
+    {"cloudTwinkles", "Cloud Twinkles", 0, &AnimationTwinklesCloudTwinkles::create},
+    {"incandescentTwinkles", "Incandescent Twinkles", 0, &AnimationTwinklesIncandescentTwinkles::create},
+
+    // TwinkleFOX patterns::create
+    {"retroC9Twinkles", "Retro C9 Twinkles", 0, &AnimationTwinklesRetroC9Twinkles::create},
+    {"redWhiteTwinkles", "Red & White Twinkles", 0, &AnimationTwinklesRedWhiteTwinkles::create},
+    {"blueWhiteTwinkles", "Blue & White Twinkles", 0, &AnimationTwinklesBlueWhiteTwinkles::create},
+    {"redGreenWhiteTwinkles", "Red, Green & White Twinkles", 0, &AnimationTwinklesRedGreenWhiteTwinkles::create},
+    {"fairyLightTwinkles", "Fairy Light Twinkles", 0, &AnimationTwinklesFairyLightTwinkles::create},
+    {"snow2Twinkles", "Snow 2 Twinkles", 0, &AnimationTwinklesSnow2Twinkles::create},
+    {"hollyTwinkles", "Holly Twinkles", 0, &AnimationTwinklesHollyTwinkles::create},
+    {"iceTwinkles", "Ice Twinkles", 0, &AnimationTwinklesIceTwinkles::create},
+    {"partyTwinkles", "Party Twinkles", 0, &AnimationTwinklesPartyTwinkles::create},
+    {"forestTwinkles", "Forest Twinkles", 0, &AnimationTwinklesForestTwinkles::create},
+    {"lavaTwinkles", "Lava Twinkles", 0, &AnimationTwinklesLavaTwinkles::create},
+    {"fireTwinkles", "Fire Twinkles", 0, &AnimationTwinklesFireTwinkles::create},
+    {"cloud2Twinkles", "Cloud 2 Twinkles", 0, &AnimationTwinklesCloud2Twinkles::create},
+    {"oceanTwinkles", "Ocean Twinkles", 0, &AnimationTwinklesOceanTwinkles::create},
+
+    // The animated palette. Must be the last one.
+    {"sensor", "Palette animated by sensors", "0:c1/c0, 1:c0/c1, 2:?, 3:?, 4:HeatMap, 5:red/yellow/white, 6:blue/red, 7:sherbert",
+     &AnimationSensor::create},
+};
+
+const char *get_animation_name(uint8_t index)
+{
+    if (index >= ANIMATION_COUNT)
+        return 0;
+
+    memcpy_P(&animation_description, &animation_description_list[index], sizeof(animation_description_t));
+    return animation_description.name;
+}
+
+const char *get_animation_description(uint8_t index)
+{
+    if (index >= ANIMATION_COUNT)
+        return 0;
+
+    memcpy_P(&animation_description, &animation_description_list[index], sizeof(animation_description_t));
+    return animation_description.description;
+}
+
+bool animation_has_options_description(uint8_t index)
+{
+    if (index >= ANIMATION_COUNT)
+        return 0;
+
+    memcpy_P(&animation_description, &animation_description_list[index], sizeof(animation_description_t));
+    return animation_description.options != 0;
+}
+
+const char *get_animation_options_description(uint8_t index)
+{
+    if (index >= ANIMATION_COUNT)
+        return 0;
+
+    memcpy_P(&animation_description, &animation_description_list[index], sizeof(animation_description_t));
+    return animation_description.options;
+}
+
+void animation_set_for_stripe_by_index(uint8_t stripe, uint8_t index)
 {
     if (stripe >= MAX_LED_STRIPES)
         return;
 
-    uint8_t animation_index = static_cast<uint8_t>(animation);
-    LV_("set ani %u %u", stripe, animation_index);
+    if (index >= ANIMATION_COUNT)
+        return;
+
+    memcpy_P(&animation_description, &animation_description_list[index], sizeof(animation_description_t));
 
     delete led_stripe[stripe].animation;
 
-    led_stripe[stripe].active_animation = animation;
-    led_stripe[stripe].delay_msecs = FPS_TO_DELAY(led_stripe_status[stripe].animations[animation_index].fps);
+    led_stripe[stripe].active_animation = index;
+    led_stripe[stripe].delay_msecs = FPS_TO_DELAY(led_stripe_status[stripe].animations[index].fps);
 
-    switch (animation)
-    {
-    case animation_names::AnimationTests:
-        led_stripe[stripe].animation = new fastled::AnimationBasicTests(led_stripe[stripe].leds, led_stripe[stripe].led_count,
-                                                                        &led_stripe_status[stripe].animations[animation_index]);
-        break;
-    case animation_names::AnimationLittle:
-        led_stripe[stripe].animation = new fastled::AnimationLittle(led_stripe[stripe].leds, led_stripe[stripe].led_count,
-                                                                    &led_stripe_status[stripe].animations[animation_index]);
-        break;
-    case animation_names::AnimationGradient:
-        led_stripe[stripe].animation = new fastled::AnimationGradient(led_stripe[stripe].leds, led_stripe[stripe].led_count,
-                                                                      &led_stripe_status[stripe].animations[animation_index]);
-        break;
-    case animation_names::AnimationPalette:
-        led_stripe[stripe].animation = new fastled::AnimationRotatingPalette(led_stripe[stripe].leds, led_stripe[stripe].led_count,
-                                                                             &led_stripe_status[stripe].animations[animation_index]);
-        break;
-    case animation_names::AnimationFire2012:
-        led_stripe[stripe].animation = new fastled::AnimationFire2012(led_stripe[stripe].leds, led_stripe[stripe].led_count,
-                                                                      &led_stripe_status[stripe].animations[animation_index]);
-        break;
-    case animation_names::AnimationInoiseFire:
-        led_stripe[stripe].animation = new fastled::AnimationInoiseFire(led_stripe[stripe].leds, led_stripe[stripe].led_count,
-                                                                        &led_stripe_status[stripe].animations[animation_index]);
-        break;
-    case animation_names::AnimationInoiseMover:
-        led_stripe[stripe].animation = new fastled::AnimationInoiseMover(led_stripe[stripe].leds, led_stripe[stripe].led_count,
-                                                                         &led_stripe_status[stripe].animations[animation_index]);
-        break;
-    case animation_names::AnimationInoisePal:
-        led_stripe[stripe].animation = new fastled::AnimationInoisePal(led_stripe[stripe].leds, led_stripe[stripe].led_count,
-                                                                       &led_stripe_status[stripe].animations[animation_index]);
-        break;
-    case animation_names::AnimationDotBeat:
-        led_stripe[stripe].animation = new fastled::AnimationDotBeat(led_stripe[stripe].leds, led_stripe[stripe].led_count,
-                                                                     &led_stripe_status[stripe].animations[animation_index]);
-        break;
-    case animation_names::AnimationSerendipitous:
-        led_stripe[stripe].animation = new fastled::AnimationSerendipitous(led_stripe[stripe].leds, led_stripe[stripe].led_count,
-                                                                           &led_stripe_status[stripe].animations[animation_index]);
-        break;
-    case animation_names::AnimationMover:
-        led_stripe[stripe].animation = new fastled::AnimationMover(led_stripe[stripe].leds, led_stripe[stripe].led_count,
-                                                                   &led_stripe_status[stripe].animations[animation_index]);
-        break;
-    case animation_names::AnimationBeatWave:
-        led_stripe[stripe].animation = new fastled::AnimationBeatWave(led_stripe[stripe].leds, led_stripe[stripe].led_count,
-                                                                      &led_stripe_status[stripe].animations[animation_index]);
-        break;
-    case animation_names::AnimationNoise16:
-        led_stripe[stripe].animation = new fastled::AnimationNoise16(led_stripe[stripe].leds, led_stripe[stripe].led_count,
-                                                                     &led_stripe_status[stripe].animations[animation_index]);
-        break;
-    case animation_names::AnimationRainbowBeat:
-        led_stripe[stripe].animation = new fastled::AnimationRainbowBeat(led_stripe[stripe].leds, led_stripe[stripe].led_count,
-                                                                         &led_stripe_status[stripe].animations[animation_index]);
-        break;
-    case animation_names::AnimationSensorVisualisation:
-        led_stripe[stripe].animation = new fastled::AnimationSensor(led_stripe[stripe].leds, led_stripe[stripe].led_count,
-                                                                    &led_stripe_status[stripe].animations[animation_index]);
-        break;
-    }
+    led_stripe[stripe].animation =
+        animation_description.factory_function(led_stripe[stripe].leds, led_stripe[stripe].led_count, &led_stripe_status[stripe].animations[index]);
 }
 
 #endif

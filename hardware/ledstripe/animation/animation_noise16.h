@@ -8,7 +8,7 @@ namespace fastled
 class AnimationNoise16 : public LedStripeAnimation
 {
 public:
-    AnimationNoise16(CRGB *leds, uint16_t led_count, animation *animation_info);
+    static LedStripeAnimation *create(CRGB *leds, uint16_t led_count, animation_configuration_t *animation_info);
     virtual ~AnimationNoise16();
 
     virtual void setOption(uint8_t option) override;
@@ -16,6 +16,8 @@ public:
     virtual bool loop() override;
 
 protected:
+    AnimationNoise16(CRGB *leds, uint16_t led_count, animation_configuration_t *animation_info);
+
     void noise16_1();
     void noise16_2();
     void noise16_3();

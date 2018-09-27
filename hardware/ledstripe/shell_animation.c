@@ -24,47 +24,77 @@
     }
 
 extern char *es_output_buffer;
-extern uint16_t es_output_buffer_len;
+// extern uint16_t es_output_buffer_len;
 
-bool animation_cmd_status(uint8_t argc, char **argv);
-bool animation_cmd_run(uint8_t argc, char **argv);
-bool animation_cmd_configuration(uint8_t argc, char **argv);
-bool animation_cmd_cfg_animation(uint8_t argc, char **argv);
-bool animation_cmd_global_configuration(uint8_t argc, char **argv);
-bool animation_cmd_sensor(uint8_t argc, char **argv);
-bool animation_cmd_settings(uint8_t argc, char **argv);
-bool animation_cmd_help(uint8_t argc, char **argv);
+bool cmd_status(uint8_t argc, char **argv);
+bool cmd_run(uint8_t argc, char **argv);
+bool cmd_animation(uint8_t argc, char **argv);
+bool cmd_configure_animation(uint8_t argc, char **argv);
+bool cmd_global_configuration(uint8_t argc, char **argv);
+bool cmd_sensor(uint8_t argc, char **argv);
+bool cmd_manage_settings(uint8_t argc, char **argv);
+bool cmd_help(uint8_t argc, char **argv);
+bool cmd_animation_desc(uint8_t argc, char **argv);
+
+void option_help_animation();
+void option_help_configure_animation();
 
 #ifdef DEBUG_FUNCTIONS_SUPPORTED
 #endif
 
 const struct _s_shell_cmd animation_shell_cmd[] PROGMEM = {
-    SHELLCMD("help", animation_cmd_help, "", "this help"),
-    SHELLCMD("sta", animation_cmd_status, "[#]", "status"),
-    SHELLCMD("run", animation_cmd_run, "# [0/1]", "start/stop"),
-    SHELLCMD("cfg", animation_cmd_configuration, "# ani|ans|apl|asw #", "stripe config"),
-    SHELLCMD("ani", animation_cmd_cfg_animation, "# fps|opt|sn|co # [#]", "animation config"),
-    SHELLCMD("glo", animation_cmd_global_configuration, "[bri #]", "global configuration"),
-    SHELLCMD("set", animation_cmd_settings, "[#] load|clear|save", "load/clear/save settings"),
-    SHELLCMD("sns", animation_cmd_sensor, "[#] [v] [f]", "get/set sensor value (fraction)"),
+    SHELLCMD("help", cmd_help, "", "this help", 0),
+    SHELLCMD("sta", cmd_status, "s#", "get status for stripe s#", 0),
+    SHELLCMD("run", cmd_run, "s# 0|1|cyc v", "start/stop/cycle running animation", 0),
+    SHELLCMD("set", cmd_animation, "s# anc|asc|ani|ans|fps|apl|asw|op0/1|sn0/1|co0/1 v", "get/set configuration for stripe s#", option_help_animation),
+    SHELLCMD("cnf", cmd_configure_animation, "s# a# [fps|op0/1|sn0/1|co0/1 [v]]", "get/set configuration for animation a#",
+             option_help_configure_animation),
+    SHELLCMD("glo", cmd_global_configuration, "fps|bri [v]", "get/set global configuration for all stripes", 0),
+    SHELLCMD("eem", cmd_manage_settings, "[s#] load|clear [v]|save", "load/clear/save settings for stripe s#", 0),
+    SHELLCMD("lst", cmd_animation_desc, "[#a]", "list all or show description for animation #a", 0),
+    SHELLCMD("sns", cmd_sensor, "upd|s# [v] [f]", "get/set sensor value [fraction]; upd forces update", 0),
 #ifdef DEBUG_FUNCTIONS_SUPPORTED
 #endif
-    SHELLCMD(0, 0, 0, 0)};
+    SHELLCMD(0, 0, 0, 0, 0)};
 
 #ifdef DEBUG_FUNCTIONS_SUPPORTED
 #endif
 
-bool animation_cmd_help(uint8_t argc, char **argv)
+void option_help_animation()
+{
+    CATOUT("set <stripe#> <cmd> [value]")
+    CATOUT("cyc: cycle to next/previous animation\n");
+    CATOUT("anc: active animation\n");
+    CATOUT("asc: active sensor animation\n");
+    CATOUT("ani: current animation\n");
+    CATOUT("ans: current sensor animation\n");
+    CATOUT("apl: autoplay\n");
+    CATOUT("asw: autoswitch\n");
+    CATOUT("op0/1: option 0/1\n");
+    CATOUT("sn0/sn1: sensor index\n");
+    CATOUT("co0/co1: current color 0/1 [RR GG BB]\n");
+}
+
+void option_help_configure_animation()
+{
+    CATOUT("cnf <stripe#> <ani#> <cmd> [value]")
+    CATOUT("fps: frames per second\n");
+    CATOUT("op0/1: option 0/1\n");
+    CATOUT("sn0/1: sensor 0/1\n");
+    CATOUT("co0/1: color 0/1 [RR GG BB]\n");
+}
+
+bool cmd_help(uint8_t argc, char **argv)
 {
     struct _s_shell_cmd shell_cmd;
     uint8_t cmdid = 0;
 
     memcpy_P(&shell_cmd, &animation_shell_cmd[cmdid++], sizeof(struct _s_shell_cmd));
 
-    while (shell_cmd.name != 0)
+    while (shell_cmd.cmd != 0)
     {
 #if defined(SHELL_ARGS_HELP_SUPPORTED) || defined(SHELL_HELP_SUPPORTED)
-        CATSPRINTF("%s: %s\n", shell_cmd.name, shell_cmd.cmd_help);
+        CATSPRINTF("%s: %s\n", shell_cmd.cmd, shell_cmd.cmd_help);
         if (shell_cmd.args_help[0] != '\0')
             CATSPRINTF(" %s\n", shell_cmd.args_help);
 #else
@@ -80,6 +110,10 @@ bool animation_cmd_help(uint8_t argc, char **argv)
 #endif
 #endif
 #endif
+#ifdef SHELL_ARGS_HELP_SUPPORTED
+        if (shell_cmd.func_help != 0)
+            shell_cmd.func_help();
+#endif
 
         memcpy_P(&shell_cmd, &animation_shell_cmd[cmdid++], sizeof(struct _s_shell_cmd));
     }
@@ -87,14 +121,15 @@ bool animation_cmd_help(uint8_t argc, char **argv)
     return true;
 }
 
-void animation_dump_current_status(uint8_t stripe)
+void dump_current_status(uint8_t stripe)
 {
+#if 0
     CATSPRINTF("sta %u\n", stripe);
     CATSPRINTF(".run %u\n", animation_get_running(stripe));
     CATSPRINTF(".anr %u\n", animation_get_active_animation(stripe));
     CATSPRINTF(".ani %u\n", animation_get_current_animation(stripe));
     CATSPRINTF(".asn %u\n", animation_get_sensor_animation(stripe));
-    CATSPRINTF(".asw %u\n", animation_get_autoswitch_sensor_animation(stripe));
+    CATSPRINTF(".asw %u\n", animation_is_autoswitch_to_sensor_animation(stripe));
     CATSPRINTF(".apl %u\n", animation_get_autoplay(stripe));
     CATSPRINTF(".fps %u\n", animation_get_current_fps(stripe));
     CATSPRINTF(".opt %u\n", animation_get_current_option(stripe));
@@ -105,16 +140,36 @@ void animation_dump_current_status(uint8_t stripe)
     CATSPRINTF(".co0 %x %x %x\n", hsv[0], hsv[1], hsv[2]);
     animation_get_current_color(stripe, 1, hsv);
     CATSPRINTF(".co1 %x %x %x\n", hsv[0], hsv[1], hsv[2]);
+#else
+    CATSPRINTF("current status: stripe %u:\n", stripe);
+    CATSPRINTF("running: %u \n", animation_get_running(stripe));
+    CATSPRINTF("active animation: %u \n", animation_get_active_animation(stripe));
+    CATSPRINTF("current animation: %u\n", animation_get_current_animation(stripe));
+    CATSPRINTF("sensor animation: %u\n", animation_get_sensor_animation(stripe));
+    CATSPRINTF("autoswitch %u\n", animation_is_autoswitch_to_sensor_animation(stripe));
+    CATSPRINTF("autoplay %u\n", animation_get_autoplay(stripe));
+    CATSPRINTF("fps: %u\n", animation_get_current_fps(stripe));
+    CATSPRINTF("option 0: %u\n", animation_get_current_option(stripe, 0));
+    CATSPRINTF("option 1: %u\n", animation_get_current_option(stripe, 1));
+    CATSPRINTF("sensor 0: %u\n", animation_get_current_sensor_index(stripe, 0));
+    CATSPRINTF("sensor 1: %u\n", animation_get_current_sensor_index(stripe, 1));
+    uint8_t hsv[3];
+    animation_get_current_color(stripe, 0, hsv);
+    CATSPRINTF("color 0: %x %x %x\n", hsv[0], hsv[1], hsv[2]);
+    animation_get_current_color(stripe, 1, hsv);
+    CATSPRINTF("color 1: %x %x %x\n", hsv[0], hsv[1], hsv[2]);
+#endif
 }
 
-void animation_dump_status(uint8_t stripe, animation_names animation)
+void dump_configuration_for_animation(uint8_t stripe, uint8_t animation)
 {
+#if 0
     CATSPRINTF("sta %u\n", stripe);
     CATSPRINTF(".run %u\n", animation_get_running(stripe));
     CATSPRINTF(".anr %u\n", animation_get_active_animation(stripe));
     CATSPRINTF(".ani %u\n", animation_get_current_animation(stripe));
     CATSPRINTF(".asn %u\n", animation_get_sensor_animation(stripe));
-    CATSPRINTF(".asw %u\n", animation_get_autoswitch_sensor_animation(stripe));
+    CATSPRINTF(".asw %u\n", animation_is_autoswitch_to_sensor_animation(stripe));
     CATSPRINTF(".apl %u\n", animation_get_autoplay(stripe));
     CATSPRINTF(".fps %u\n", animation_get_fps(stripe, animation));
     CATSPRINTF(".opt %u\n", animation_get_option(stripe, animation));
@@ -125,9 +180,22 @@ void animation_dump_status(uint8_t stripe, animation_names animation)
     CATSPRINTF(".co0 %x %x %x\n", hsv[0], hsv[1], hsv[2]);
     animation_get_color(stripe, animation, 1, hsv);
     CATSPRINTF(".co1 %x %x %x\n", hsv[0], hsv[1], hsv[2]);
+#else
+    CATSPRINTF("configuration: stripe %u, animation %u:\n", stripe, animation);
+    CATSPRINTF("fps: %u\n", animation_get_fps(stripe, animation));
+    CATSPRINTF("option 0: %u\n", animation_get_option(stripe, animation, 0));
+    CATSPRINTF("option 1: %u\n", animation_get_option(stripe, animation, 1));
+    CATSPRINTF("sensor 0: %u\n", animation_get_sensor_index(stripe, animation, 0));
+    CATSPRINTF("sensor 1: %u\n", animation_get_sensor_index(stripe, animation, 1));
+    uint8_t hsv[3];
+    animation_get_color(stripe, animation, 0, hsv);
+    CATSPRINTF("color 0: %x %x %x\n", hsv[0], hsv[1], hsv[2]);
+    animation_get_color(stripe, animation, 1, hsv);
+    CATSPRINTF("color 1: %x %x %x\n", hsv[0], hsv[1], hsv[2]);
+#endif
 }
 
-bool animation_cmd_settings(uint8_t argc, char **argv)
+bool cmd_manage_settings(uint8_t argc, char **argv)
 {
     if (argc == 0)
         return false;
@@ -174,7 +242,7 @@ bool animation_cmd_settings(uint8_t argc, char **argv)
     return true;
 }
 
-bool animation_cmd_global_configuration(uint8_t argc, char **argv)
+bool cmd_global_configuration(uint8_t argc, char **argv)
 {
     CATOUT("glo ");
 
@@ -215,11 +283,11 @@ bool animation_cmd_global_configuration(uint8_t argc, char **argv)
     return true;
 }
 
-bool animation_cmd_sensor(uint8_t argc, char **argv)
+bool cmd_sensor(uint8_t argc, char **argv)
 {
     if (argc < 1)
     {
-    	CATOUT("sns\n");
+        CATOUT("sns\n");
         for (uint8_t index = 0; index < MAX_SENSORS; ++index)
         {
             CATSPRINTF(".sns %u %d.%04u\n", index, sensors_get_value(index), (uint16_t)sensors_get_fraction(index) * 625);
@@ -259,10 +327,10 @@ bool animation_cmd_sensor(uint8_t argc, char **argv)
     return true;
 }
 
-bool animation_cmd_configuration(uint8_t argc, char **argv)
+bool cmd_animation(uint8_t argc, char **argv)
 {
-    // str cfg 0 <cmd> [#]
-    // LV_("cfg argc %u", argc);
+    // args[]:     0      1      2
+    // str set <stripe> <cmd> [value]
 
     if (argc < 1)
         return false;
@@ -273,28 +341,40 @@ bool animation_cmd_configuration(uint8_t argc, char **argv)
 
     char *cmd = argv[1];
 
-    CATSPRINTF("cfg %u %s ", stripe, cmd);
+    CATSPRINTF("set %u %s ", stripe, cmd);
 
     if (argc == 2)
     {
         if (strcmp_P(cmd, PSTR("anc")) == 0)
         {
+            // make the current animation the active animation
             animation_set_active_animation(stripe, animation_get_current_animation(stripe));
         }
 
         else if (strcmp_P(cmd, PSTR("asc")) == 0)
         {
+            // make the sensor animation the active animation
             animation_set_active_animation(stripe, animation_get_sensor_animation(stripe));
         }
     }
     else if (argc == 3)
     {
-        //        0  1  2
-        // str cfg 0 fps 5
+        // str set <stripe> <cmd> [#]
+        //         0  1  2
+        // str set 0 fps 5
+        // str set 1 cyc 1
 
         uint8_t value = atoi(argv[2]);
 
-        if (strcmp_P(cmd, PSTR("ani")) == 0)
+        if (strcmp_P(cmd, PSTR("cyc")) == 0)
+        {
+            if (value == 0)
+                animation_set_previous_animation_active(stripe);
+            else
+                animation_set_next_animation_active(stripe);
+        }
+
+        else if (strcmp_P(cmd, PSTR("ani")) == 0)
         {
             animation_set_current_animation(stripe, value);
         }
@@ -331,9 +411,14 @@ bool animation_cmd_configuration(uint8_t argc, char **argv)
             animation_set_autoswitch_sensor_animation(stripe, value);
         }
 
-        else if (strcmp_P(cmd, PSTR("opt")) == 0)
+        else if (strcmp_P(cmd, PSTR("op0")) == 0)
         {
-            animation_set_current_option(stripe, value);
+            animation_set_current_option_0(stripe, value);
+        }
+
+        else if (strcmp_P(cmd, PSTR("op1")) == 0)
+        {
+            animation_set_current_option_1(stripe, value);
         }
 
         else if (strcmp_P(cmd, PSTR("sn0")) == 0)
@@ -413,12 +498,17 @@ bool animation_cmd_configuration(uint8_t argc, char **argv)
 
     else if (strcmp_P(cmd, PSTR("asw")) == 0)
     {
-        SPRINTF("%u", animation_get_autoswitch_sensor_animation(stripe));
+        SPRINTF("%u", animation_is_autoswitch_to_sensor_animation(stripe));
     }
 
-    else if (strcmp_P(cmd, PSTR("opt")) == 0)
+    else if (strcmp_P(cmd, PSTR("op0")) == 0)
     {
-        SPRINTF("%u", animation_get_current_option(stripe));
+        SPRINTF("%u", animation_get_current_option_0(stripe));
+    }
+
+    else if (strcmp_P(cmd, PSTR("op1")) == 0)
+    {
+        SPRINTF("%u", animation_get_current_option_1(stripe));
     }
 
     else if (strcmp_P(cmd, PSTR("sn0")) == 0)
@@ -458,26 +548,32 @@ bool animation_cmd_configuration(uint8_t argc, char **argv)
     return true;
 }
 
-bool animation_cmd_cfg_animation(uint8_t argc, char **argv)
+bool cmd_configure_animation(uint8_t argc, char **argv)
 {
-    //             0      1     2      3
-    // str ani <stripe> <cmd> <ani> [value]
-    // str ani <stripe>  co0  <ani>  h s v
+    // argv[]:      0      1     2      3
+    // str cnf <stripe#> <ani#> <cmd> [value]
+    // str cnf <stripe#> <ani#> co0  h s v
 
-    if (argc < 3)
+    if (argc < 2)
         return false;
 
     uint8_t stripe = atoi(argv[0]);
     if (stripe >= MAX_LED_STRIPES)
         return false;
 
-    uint8_t animationid = atoi(argv[2]);
+    uint8_t animationid = atoi(argv[1]);
     if (animationid >= ANIMATION_COUNT)
         return false;
 
-    char *cmd = argv[1];
+    if (argc == 2)
+    {
+        dump_configuration_for_animation(stripe, animationid);
+        return true;
+    }
 
-    CATSPRINTF("ani %u %s %u ", stripe, cmd, animationid);
+    char *cmd = argv[2];
+
+    CATSPRINTF("cnf %u  %u %s", stripe, animationid, cmd);
 
     if (argc == 4)
     {
@@ -488,9 +584,14 @@ bool animation_cmd_cfg_animation(uint8_t argc, char **argv)
             animation_set_fps(stripe, animationid, value);
         }
 
-        else if (strcmp_P(cmd, PSTR("opt")) == 0)
+        else if (strcmp_P(cmd, PSTR("op0")) == 0)
         {
-            animation_set_option(stripe, animationid, value);
+            animation_set_option(stripe, animationid, 0, value);
+        }
+
+        else if (strcmp_P(cmd, PSTR("op1")) == 0)
+        {
+            animation_set_option(stripe, animationid, 1, value);
         }
 
         else if (strcmp_P(cmd, PSTR("sn0")) == 0)
@@ -536,9 +637,14 @@ bool animation_cmd_cfg_animation(uint8_t argc, char **argv)
         SPRINTF("%u", animation_get_fps(stripe, animationid));
     }
 
-    else if (strcmp_P(cmd, PSTR("opt")) == 0)
+    else if (strcmp_P(cmd, PSTR("op0")) == 0)
     {
-        SPRINTF("%u", animation_get_option(stripe, animationid));
+        SPRINTF("%u", animation_get_option(stripe, animationid, 0));
+    }
+
+    else if (strcmp_P(cmd, PSTR("op1")) == 0)
+    {
+        SPRINTF("%u", animation_get_option(stripe, animationid, 1));
     }
 
     else if (strcmp_P(cmd, PSTR("sn0")) == 0)
@@ -573,7 +679,7 @@ bool animation_cmd_cfg_animation(uint8_t argc, char **argv)
     return true;
 }
 
-bool animation_cmd_run(uint8_t argc, char **argv)
+bool cmd_run(uint8_t argc, char **argv)
 {
     if (argc < 1)
         return false;
@@ -593,31 +699,43 @@ bool animation_cmd_run(uint8_t argc, char **argv)
     return true;
 }
 
-bool animation_cmd_status(uint8_t argc, char **argv)
+bool cmd_animation_desc(uint8_t argc, char **argv)
 {
     if (argc < 1)
     {
-        for (uint8_t stripe = 0; stripe < MAX_LED_STRIPES; ++stripe)
-            animation_dump_status(stripe, animation_get_active_animation(stripe));
-        return true;
+        for (uint8_t animationid = 0; animationid < ANIMATION_COUNT; ++animationid)
+
+            CATSPRINTF("%d: %s - %s\n", get_animation_name(animationid), get_animation_description(animationid));
     }
+    else
+    {
+        uint8_t animationid = atoi(argv[0]);
+        if (animationid >= ANIMATION_COUNT)
+            return false;
+
+        SPRINTF("animation %u:\n", animationid);
+        CATSPRINTF("%s: %s\n", get_animation_name(animationid), get_animation_description(animationid));
+        if (animation_has_options_description(animationid))
+        {
+            CATOUT("options:\n");
+            CATSPRINTF("%s\n", get_animation_options_description(animationid));
+        }
+    }
+
+    return true;
+}
+
+bool cmd_status(uint8_t argc, char **argv)
+{
+    if (argc < 1)
+        return false;
 
     uint8_t stripe = atoi(argv[0]);
     if (stripe >= MAX_LED_STRIPES)
         return false;
 
-    if (argc < 2)
-    {
-        animation_dump_status(stripe, animation_get_active_animation(stripe));
-    }
-    else
-    {
-        uint8_t animationid = atoi(argv[1]);
-        if (animationid >= ANIMATION_COUNT)
-            return false;
-
-        animation_dump_status(stripe, animationid);
-    }
+    dump_current_status(stripe);
+    //dump_configuration_for_animation(stripe, animation_get_active_animation(stripe));
 
     return true;
 }

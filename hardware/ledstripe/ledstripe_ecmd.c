@@ -37,7 +37,7 @@
 #include "shell.h"
 #include "shell_animation.h"
 
-#define ECMD_LEDSTRIPE_OUTPUT_SIZE 350
+#define ECMD_LEDSTRIPE_OUTPUT_SIZE 1024
 
 char* es_output_buffer = 0;
 uint16_t es_output_buffer_len = 0;
@@ -62,10 +62,10 @@ bool sub_shell_command(const struct _s_shell_cmd *sub_cmd, uint8_t argc, char **
 
     memcpy_P(&shell_cmd, &sub_cmd[cmdid++], sizeof(struct _s_shell_cmd));
 
-    while (shell_cmd.name != 0)
+    while (shell_cmd.cmd != 0)
     {
-        // fprintf_P(_sf, PSTR("subc %s\n"), shell_cmd.name);
-        if (strcmp(cmd, shell_cmd.name) == 0)
+        // fprintf_P(_sf, PSTR("subc %s\n"), shell_cmd.cmd);
+        if (strcmp(cmd, shell_cmd.cmd) == 0)
         {
             return shell_cmd.func(argc - 1, argv + 1);
         }
@@ -100,27 +100,27 @@ bool shell_command(uint8_t *buffer, uint8_t length)
 
 int16_t parse_cmd_ledstripe_animation(char *cmd, char *output, uint16_t len)
 {
-	char *ocmd = cmd;
-	//LV_("cmd <%s> %u", cmd, (uint8_t)cmd[0]);
+    char *ocmd = cmd;
+    //LV_("cmd <%s> %u", cmd, (uint8_t)cmd[0]);
 
-	if (cmd[0] == ECMD_STATE_MAGIC)
-	{
-		LS_("magic");
-		char *token = strsep(&es_output_buffer, "\n");
-		if (token != 0 && *token != '\0')
-		{
-        	uint16_t l = strlen(token);
-        	LV_("tok %u %s", l, token);
-        	strncpy(output, token, len-1);
-			return ECMD_AGAIN(l);
-		}
+    if (cmd[0] == ECMD_STATE_MAGIC)
+    {
+        //LS_("magic");
+        char *token = strsep(&es_output_buffer, "\n");
+        if (token != 0 && *token != '\0')
+        {
+            uint16_t l = strlen(token);
+            //LV_("tok %u %s", l, token);
+            strncpy(output, token, len-1);
+            return ECMD_AGAIN(l);
+        }
 
-		LS_("magic ok");
-		return ECMD_FINAL_OK;
-	}
+        //LS_("magic ok");
+        return ECMD_FINAL_OK;
+    }
 
-	es_output_buffer = output_buffer;
-	es_output_buffer_len = ECMD_LEDSTRIPE_OUTPUT_SIZE;
+    es_output_buffer = output_buffer;
+    es_output_buffer_len = ECMD_LEDSTRIPE_OUTPUT_SIZE;
 
     // skip leading spaces
     while (*cmd == ' ')
@@ -128,25 +128,25 @@ int16_t parse_cmd_ledstripe_animation(char *cmd, char *output, uint16_t len)
 
     if (shell_command((uint8_t *)cmd, strlen(cmd)))
     {
-    	es_output_buffer = output_buffer;
+        es_output_buffer = output_buffer;
 
-    	if (strlen(es_output_buffer) >= len)
-    	{
-    		LV_("ecmd eso %u", strlen(es_output_buffer));
-    		char *token = strsep(&es_output_buffer, "\n");
-        	uint16_t l = strlen(token);
-        	LV_("tok %u %s", l, token);
-        	strncpy(output, token, len-1);
+        if (strlen(es_output_buffer) >= len)
+        {
+            //LV_("ecmd eso %u", strlen(es_output_buffer));
+            char *token = strsep(&es_output_buffer, "\n");
+            uint16_t l = strlen(token);
+            //LV_("tok %u %s", l, token);
+            strncpy(output, token, len-1);
 
-        	ocmd[0] = ECMD_STATE_MAGIC;
-        	ocmd[1] = 0;
+            ocmd[0] = ECMD_STATE_MAGIC;
+            ocmd[1] = 0;
 
-    		return ECMD_AGAIN(l);
-    	}
+            return ECMD_AGAIN(l);
+        }
 
-    	uint16_t l = strlen(es_output_buffer);
-    	strncpy(output, es_output_buffer, len-1);
-    	return ECMD_FINAL(l);
+        uint16_t l = strlen(es_output_buffer);
+        strncpy(output, es_output_buffer, len-1);
+        return ECMD_FINAL(l);
     }
 
     return ECMD_ERR_PARSE_ERROR;

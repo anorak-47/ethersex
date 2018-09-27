@@ -36,7 +36,7 @@
 namespace fastled
 {
 
-AnimationSerendipitous::AnimationSerendipitous(CRGB *leds, uint16_t led_count, animation *animation_info)
+AnimationSerendipitous::AnimationSerendipitous(CRGB *leds, uint16_t led_count, animation_configuration_t *animation_info)
     : LedStripeAnimation(leds, led_count, animation_info)
 {
     currentBlending = LINEARBLEND;
@@ -47,6 +47,11 @@ AnimationSerendipitous::AnimationSerendipitous(CRGB *leds, uint16_t led_count, a
 
 AnimationSerendipitous::~AnimationSerendipitous()
 {
+}
+
+static LedStripeAnimation *AnimationSerendipitous::create(CRGB *leds, uint16_t led_count, animation_configuration_t *animation_info)
+{
+    return new AnimationSerendipitous(leds, led_count, animation_info);
 }
 
 void AnimationSerendipitous::initialize()

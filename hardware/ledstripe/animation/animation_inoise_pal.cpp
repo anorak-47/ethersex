@@ -24,7 +24,7 @@
 namespace fastled
 {
 
-AnimationInoisePal::AnimationInoisePal(CRGB *leds, uint16_t led_count, animation *animation_info) : LedStripeAnimation(leds, led_count, animation_info)
+AnimationInoisePal::AnimationInoisePal(CRGB *leds, uint16_t led_count, animation_configuration_t *animation_info) : LedStripeAnimation(leds, led_count, animation_info)
 {
     currentPalette = CRGBPalette16(CRGB::Black);
     targetPalette = OceanColors_p;
@@ -32,6 +32,11 @@ AnimationInoisePal::AnimationInoisePal(CRGB *leds, uint16_t led_count, animation
 
 AnimationInoisePal::~AnimationInoisePal()
 {
+}
+
+static LedStripeAnimation *AnimationInoisePal::create(CRGB *leds, uint16_t led_count, animation_configuration_t *animation_info)
+{
+    return new AnimationInoisePal(leds, led_count, animation_info);
 }
 
 void AnimationInoisePal::initialize()
