@@ -15,6 +15,7 @@ namespace fastled
 AnimationSensor::AnimationSensor(CRGB *leds, uint16_t led_count, animation_configuration_t *animation_info)
     : LedStripeAnimation(leds, led_count, animation_info)
 {
+    simulated_sensor = TREF;
 }
 
 AnimationSensor::~AnimationSensor()
@@ -52,50 +53,12 @@ void AnimationSensor::updateSimulation()
     }
 }
 
-bool AnimationSensor::sensorsChanged()
-{
-    // int8_t current_delta = sns_current_value - sns_ref_value;
-
-    if (simulate)
-    {
-        delta = simulated_sensor - TREF;
-    }
-
-    bool changed = (_old_delta != delta);
-    _old_delta = delta;
-
-    if (changed)
-        updatePalette();
-
-    return changed || animateByOptionValue();
-}
-
-bool AnimationSensor::animateByOptionValue()
-{
-    return (_option2);
-}
-
-void AnimationSensor::updatePalette()
-{
-    uint16_t startpos = (sns_current_value - TREF) * TSTEPS;
-    uint16_t endpos = (sns_current_value - TREF + 1) * TSTEPS;
-
-    if (endpos > PMAX)
-    {
-        endpos = PMAX;
-        startpos = endpos - TSTEPS;
-    }
-
-    LV_("snsa: c:%i r:%i %u-%u", sns_current_value, sns_ref_value, startpos, endpos);
-
-    _movingPalette = CRGBPalette16(ColorFromPalette(_palette, startpos), ColorFromPalette(_palette, endpos));
-}
-
 void AnimationSensor::initialize()
 {
     delta = 0;
     old_delta = 0;
     _startIndex = 0;
+
     simulated_sensor = TREF;
     simulate = false;
 
@@ -137,7 +100,13 @@ DEFINE_GRADIENT_PALETTE(blue2red_gp){0,   0,   0,   128,  // blue
  * http://angrytools.com/gradient/
  * https://www.cssmatic.com/gradient-generator
  *
- *background: linear-gradient(to right, #FF0080, #FF8C00, #40E0D0)
+background: linear-gradient(to right, #FF0080, #FF8C00, #40E0D0);
+
+dusk
+background: linear-gradient(to right, #19547b, #ffd89b);
+
+sherbert
+background: linear-gradient(to right, #64f38c, #f79d00);
  */
 
 // Palettes from http://colorpalettes.net
@@ -269,11 +238,50 @@ void AnimationSensor::updateSensors()
     delta = sns_current_value - sns_ref_value;
 }
 
+bool AnimationSensor::sensorsChanged()
+{
+    // int8_t current_delta = sns_current_value - sns_ref_value;
+
+    if (simulate)
+    {
+        delta = simulated_sensor - TREF;
+    }
+
+    bool changed = (_old_delta != delta);
+    _old_delta = delta;
+
+    if (changed)
+        updatePalette();
+
+    return changed || animateByOptionValue();
+}
+
+bool AnimationSensor::animateByOptionValue()
+{
+    return (_option2);
+}
+
+void AnimationSensor::updatePalette()
+{
+    uint16_t startpos = delta * TSTEPS;
+    uint16_t endpos = (delta + 1) * TSTEPS;
+
+    if (endpos > PMAX)
+    {
+        endpos = PMAX;
+        startpos = endpos - TSTEPS;
+    }
+
+    // LV_("snsa: d:%u %u-%u", delta, startpos, endpos);
+
+    _movingPalette = CRGBPalette16(ColorFromPalette(_palette, startpos), ColorFromPalette(_palette, endpos));
+}
 
 void AnimationSensor::setOption2(uint8_t option)
 {
     _option2 = option;
     _old_delta = 0;
+    simulate = _option2 & 0x4;
 }
 
 void AnimationSensor::update()
@@ -322,8 +330,6 @@ void AnimationSensor::animate()
             addGlitterAt(i, 8);
         }
     }
-
-    simulate = _option2 & 0x4;
 }
 
 bool AnimationSensor::loop()
