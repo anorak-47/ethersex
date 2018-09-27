@@ -15,13 +15,18 @@
 namespace fastled
 {
 
-AnimationRainbowBeat::AnimationRainbowBeat(CRGB *leds, uint16_t led_count, animation *animation_info)
+AnimationRainbowBeat::AnimationRainbowBeat(CRGB *leds, uint16_t led_count, animation_configuration_t *animation_info)
     : LedStripeAnimation(leds, led_count, animation_info)
 {
 }
 
 AnimationRainbowBeat::~AnimationRainbowBeat()
 {
+}
+
+LedStripeAnimation *AnimationRainbowBeat::create(CRGB *leds, uint16_t led_count, animation_configuration_t *animation_info)
+{
+    return new AnimationRainbowBeat(leds, led_count, animation_info);
 }
 
 void AnimationRainbowBeat::initialize()

@@ -18,12 +18,17 @@
 namespace fastled
 {
 
-AnimationDotBeat::AnimationDotBeat(CRGB *leds, uint16_t led_count, animation *animation_info) : LedStripeAnimation(leds, led_count, animation_info)
+AnimationDotBeat::AnimationDotBeat(CRGB *leds, uint16_t led_count, animation_configuration_t *animation_info) : LedStripeAnimation(leds, led_count, animation_info)
 {
 }
 
 AnimationDotBeat::~AnimationDotBeat()
 {
+}
+
+LedStripeAnimation *AnimationDotBeat::create(CRGB *leds, uint16_t led_count, animation_configuration_t *animation_info)
+{
+    return new AnimationDotBeat(leds, led_count, animation_info);
 }
 
 void AnimationDotBeat::initialize()

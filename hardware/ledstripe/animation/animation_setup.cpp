@@ -80,6 +80,15 @@ CRGB leds_stripe_1[NUM_LEDS_STRIPE_1_REAL];
 CRGBW leds_stripe_1_rgbw[NUM_LEDS_STRIPE_1_REAL];
 CRGB *leds_stripe_1_rgb = (CRGB *)&leds_stripe_1_rgbw[0];
 
+void animation_all_back()
+{
+    fill_solid(leds_stripe_0, NUM_LEDS_STRIPE_0_REAL, CRGB::Black);
+    fill_solid(leds_stripe_1, NUM_LEDS_STRIPE_1_REAL, CRGB::Black);
+
+    animation_prepare_led_stripes_before_show();
+    FastLED.show();
+}
+
 void animation_prepare_led_stripes_before_show()
 {
 #ifdef FASTLED_MIRROR_LED_STRIPE_0
@@ -106,7 +115,7 @@ void animation_led_stripe_setup()
     FastLED.addLeds<SK6812, DATA_PIN_0, RGB>(leds_stripe_0_rgb, getRGBWsize(NUM_LEDS_STRIPE_0_REAL)).setCorrection(TypicalSMD5050);
     FastLED.addLeds<SK6812, DATA_PIN_1, RGB>(leds_stripe_1_rgb, getRGBWsize(NUM_LEDS_STRIPE_1_REAL)).setCorrection(TypicalSMD5050);
 
-	//FastLED.addLeds<SK6812, DATA_PIN_0, RGB>(leds_stripe_0_rgb, getRGBWsize(NUM_LEDS_STRIPE_0_REAL));
+    //FastLED.addLeds<SK6812, DATA_PIN_0, RGB>(leds_stripe_0_rgb, getRGBWsize(NUM_LEDS_STRIPE_0_REAL));
     //FastLED.addLeds<SK6812, DATA_PIN_1, RGB>(leds_stripe_1_rgb, getRGBWsize(NUM_LEDS_STRIPE_1_REAL));
 
     //FastLED.addLeds<WS2812B, DATA_PIN_0, RGB>(leds_stripe_0_rgb, getRGBWsize(NUM_LEDS_STRIPE_0_REAL));
@@ -124,11 +133,7 @@ void animation_led_stripe_setup()
     led_stripe[1].leds = leds_stripe_1;
     led_stripe[1].led_count = NUM_LEDS_STRIPE_1;
 
-    fill_solid(leds_stripe_0, NUM_LEDS_STRIPE_0_REAL, CRGB::Black);
-    fill_solid(leds_stripe_1, NUM_LEDS_STRIPE_1_REAL, CRGB::Black);
-
-    animation_prepare_led_stripes_before_show();
-    FastLED.show();
+    animation_all_back();
 }
 
 #else
@@ -149,6 +154,14 @@ CRGB leds_stripe_0[NUM_LEDS_STRIPE_0];
 
 #define NUM_LEDS_STRIPE_1 (19)
 CRGB leds_stripe_1[NUM_LEDS_STRIPE_1];
+
+void animation_all_back()
+{
+    fill_solid(leds_stripe_0, NUM_LEDS_STRIPE_0_FULL, CRGB::Black);
+    fill_solid(leds_stripe_1, NUM_LEDS_STRIPE_1, CRGB::Black);
+
+    FastLED.show();
+}
 
 void animation_prepare_led_stripes_before_show()
 {
@@ -174,10 +187,7 @@ void animation_led_stripe_setup()
     led_stripe[1].leds = leds_stripe_1;
     led_stripe[1].led_count = NUM_LEDS_STRIPE_1;
 
-    fill_solid(leds_stripe_0, NUM_LEDS_STRIPE_0_FULL, CRGB::Black);
-    fill_solid(leds_stripe_1, NUM_LEDS_STRIPE_1, CRGB::Black);
-
-    FastLED.show();
+    animation_all_back();
 }
 
 #endif

@@ -8,13 +8,15 @@ namespace fastled
 class AnimationDotBeat : public LedStripeAnimation
 {
 public:
-    AnimationDotBeat(CRGB *leds, uint16_t led_count, animation *animation_info);
+    static LedStripeAnimation *create(CRGB *leds, uint16_t led_count, animation_configuration_t *animation_info);
     virtual ~AnimationDotBeat();
 
     virtual void initialize() override;
     virtual bool loop() override;
 
 protected:
+    AnimationDotBeat(CRGB *leds, uint16_t led_count, animation_configuration_t *animation_info);
+
     // Define variables used by the sequences.
     int thisdelay = 10;    // A delay value for the sequence(s)
     uint8_t count = 0;     // Count up to 255 and then reverts to 0

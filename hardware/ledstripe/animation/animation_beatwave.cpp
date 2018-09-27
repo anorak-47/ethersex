@@ -15,7 +15,7 @@
 namespace fastled
 {
 
-AnimationBeatWave::AnimationBeatWave(CRGB *leds, uint16_t led_count, animation *animation_info) : LedStripeAnimation(leds, led_count, animation_info)
+AnimationBeatWave::AnimationBeatWave(CRGB *leds, uint16_t led_count, animation_configuration_t *animation_info) : LedStripeAnimation(leds, led_count, animation_info)
 {
     currentPalette = RainbowColors_p;
     currentBlending = LINEARBLEND;
@@ -23,6 +23,11 @@ AnimationBeatWave::AnimationBeatWave(CRGB *leds, uint16_t led_count, animation *
 
 AnimationBeatWave::~AnimationBeatWave()
 {
+}
+
+LedStripeAnimation *AnimationBeatWave::create(CRGB *leds, uint16_t led_count, animation_configuration_t *animation_info)
+{
+    return new AnimationBeatWave(leds, led_count, animation_info);
 }
 
 void AnimationBeatWave::initialize()
@@ -54,7 +59,7 @@ bool AnimationBeatWave::loop()
 
     EVERY_N_SECONDS(5)
     {
-    	// Change the target palette to a random one every 5 seconds.
+        // Change the target palette to a random one every 5 seconds.
         targetPalette = CRGBPalette16(CHSV(random8(), 255, random8(128, 255)), CHSV(random8(), 255, random8(128, 255)),
                                       CHSV(random8(), 192, random8(128, 255)), CHSV(random8(), 255, random8(128, 255)));
     }

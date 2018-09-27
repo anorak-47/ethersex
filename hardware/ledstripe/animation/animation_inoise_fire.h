@@ -8,13 +8,14 @@ namespace fastled
 class AnimationInoiseFire : public LedStripeAnimation
 {
 public:
-    AnimationInoiseFire(CRGB *leds, uint16_t led_count, animation *animation_info);
+    static LedStripeAnimation *create(CRGB *leds, uint16_t led_count, animation_configuration_t *animation_info);
     virtual ~AnimationInoiseFire();
 
     virtual void initialize() override;
     virtual bool loop() override;
 
 protected:
+    AnimationInoiseFire(CRGB *leds, uint16_t led_count, animation_configuration_t *animation_info);
     CRGBPalette16 currentPalette;
 
     uint32_t xscale = 20;                                          // How far apart they are

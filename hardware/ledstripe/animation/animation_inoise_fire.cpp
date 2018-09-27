@@ -17,13 +17,18 @@
 namespace fastled
 {
 
-AnimationInoiseFire::AnimationInoiseFire(CRGB *leds, uint16_t led_count, animation *animation_info)
+AnimationInoiseFire::AnimationInoiseFire(CRGB *leds, uint16_t led_count, animation_configuration_t *animation_info)
     : LedStripeAnimation(leds, led_count, animation_info)
 {
 }
 
 AnimationInoiseFire::~AnimationInoiseFire()
 {
+}
+
+LedStripeAnimation *AnimationInoiseFire::create(CRGB *leds, uint16_t led_count, animation_configuration_t *animation_info)
+{
+    return new AnimationInoiseFire(leds, led_count, animation_info);
 }
 
 void AnimationInoiseFire::initialize()
@@ -40,7 +45,7 @@ bool AnimationInoiseFire::loop()
     {
         index = inoise8(i * xscale, millis() * yscale * _led_count / 255); // X location is constant, but we move along the Y at the rate of millis()
         _leds[i] = ColorFromPalette(currentPalette, min(i * (index) >> 6, 255), i * 255 / _led_count,
-                                   LINEARBLEND); // With that value, look up the 8 bit colour palette value and assign it to the current LED.
+                                    LINEARBLEND); // With that value, look up the 8 bit colour palette value and assign it to the current LED.
     }
 
     return true;

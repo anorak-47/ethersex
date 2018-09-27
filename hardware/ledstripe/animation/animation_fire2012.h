@@ -8,13 +8,14 @@ namespace fastled
 class AnimationFire2012 : public LedStripeAnimation
 {
 public:
-    AnimationFire2012(CRGB *leds, uint16_t led_count, animation *animation_info);
+    static LedStripeAnimation *create(CRGB *leds, uint16_t led_count, animation_configuration_t *animation_info);
     virtual ~AnimationFire2012();
 
     virtual bool loop() override;
     virtual void setOption(uint8_t option) override;
 
 protected:
+    AnimationFire2012(CRGB *leds, uint16_t led_count, animation_configuration_t *animation_info);
     void Fire2012WithPalette();
 
     // Array of temperature readings at each simulation cell

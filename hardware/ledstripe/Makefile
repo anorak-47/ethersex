@@ -28,6 +28,7 @@ ANIMAITON_CPPSRC = \
 		$(ANIMATION_PATH)/animation_sensor.cpp \
 		$(ANIMATION_PATH)/animation_noise16.cpp \
 		$(ANIMATION_PATH)/animation_rainbow_beat.cpp \
+		$(ANIMATION_PATH)/animation_twinkles.cpp \
 		
 		
 				

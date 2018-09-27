@@ -23,17 +23,21 @@
 // the first sixteen entries from the virtual palette (of 256), you'd get
 // Green, followed by a smooth gradient from green-to-blue, and then Blue.
 
-
 namespace fastled
 {
 
-AnimationRotatingPalette::AnimationRotatingPalette(CRGB *leds, uint16_t led_count, animation *animation_info)
+AnimationRotatingPalette::AnimationRotatingPalette(CRGB *leds, uint16_t led_count, animation_configuration_t *animation_info)
     : LedStripeAnimation(leds, led_count, animation_info)
 {
 }
 
 AnimationRotatingPalette::~AnimationRotatingPalette()
 {
+}
+
+LedStripeAnimation *AnimationRotatingPalette::create(CRGB *leds, uint16_t led_count, animation_configuration_t *animation_info)
+{
+    return new AnimationRotatingPalette(leds, led_count, animation_info);
 }
 
 void AnimationRotatingPalette::fillLEDsFromPaletteColors(uint8_t colorIndex)
@@ -49,21 +53,19 @@ void AnimationRotatingPalette::fillLEDsFromPaletteColors(uint8_t colorIndex)
 
 void AnimationRotatingPalette::SetupPurpleAndGreenPalette()
 {
-    CRGB purple = CHSV( HUE_PURPLE, 255, 255);
-    CRGB green  = CHSV( HUE_GREEN, 255, 255);
-    CRGB black  = CRGB::Black;
+    CRGB purple = CHSV(HUE_PURPLE, 255, 255);
+    CRGB green = CHSV(HUE_GREEN, 255, 255);
+    CRGB black = CRGB::Black;
 
-    currentPalette = CRGBPalette16(
-                                   green,  green,  black,  black,
-                                   purple, purple, black,  black,
-                                   green,  green,  black,  black,
-                                   purple, purple, black,  black );
+    currentPalette =
+        CRGBPalette16(green, green, black, black, purple, purple, black, black, green, green, black, black, purple, purple, black, black);
 }
 
 void AnimationRotatingPalette::SetupTotallyRandomPalette()
 {
-    for( int i = 0; i < 16; i++) {
-        currentPalette[i] = CHSV( random8(), 255, random8());
+    for (int i = 0; i < 16; i++)
+    {
+        currentPalette[i] = CHSV(random8(), 255, random8());
     }
 }
 

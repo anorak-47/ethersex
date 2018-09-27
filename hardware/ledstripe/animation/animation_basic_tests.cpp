@@ -4,13 +4,18 @@
 namespace fastled
 {
 
-AnimationBasicTests::AnimationBasicTests(CRGB *leds, uint16_t led_count, animation *animation_info)
+AnimationBasicTests::AnimationBasicTests(CRGB *leds, uint16_t led_count, animation_configuration_t *animation_info)
     : LedStripeAnimation(leds, led_count, animation_info)
 {
 }
 
 AnimationBasicTests::~AnimationBasicTests()
 {
+}
+
+LedStripeAnimation *AnimationBasicTests::create(CRGB *leds, uint16_t led_count, animation_configuration_t *animation_info)
+{
+    return new AnimationBasicTests(leds, led_count, animation_info);
 }
 
 void AnimationBasicTests::setOption(uint8_t option)
@@ -57,8 +62,8 @@ void AnimationBasicTests::blink()
 
 void AnimationBasicTests::mover()
 {
-	_leds[_startIndex] = CRGB::Black;
-	_startIndex++;
+    _leds[_startIndex] = CRGB::Black;
+    _startIndex++;
     if (_startIndex >= _led_count)
         _startIndex = 0;
     _leds[_startIndex] = CRGB::White;
@@ -69,14 +74,14 @@ bool AnimationBasicTests::loop()
     switch (_option)
     {
     case 0:
-    	color_test();
-    	break;
+        color_test();
+        break;
     case 1:
-    	blink();
-    	break;
+        blink();
+        break;
     case 2:
-    	mover();
-    	break;
+        mover();
+        break;
     }
 
     return (_option <= 2);

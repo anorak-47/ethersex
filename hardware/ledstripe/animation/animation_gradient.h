@@ -8,7 +8,7 @@ namespace fastled
 class AnimationGradient : public LedStripeAnimation
 {
 public:
-    AnimationGradient(CRGB *leds, uint16_t led_count, animation *animation_info);
+    static LedStripeAnimation *create(CRGB *leds, uint16_t led_count, animation_configuration_t *animation_info);
     virtual ~AnimationGradient();
 
     virtual bool loop() override;
@@ -16,10 +16,11 @@ public:
     virtual void update() override;
 
 protected:
+    AnimationGradient(CRGB *leds, uint16_t led_count, animation_configuration_t *animation_info);
     uint8_t _option = 0;
-	uint8_t _startIndex = 0;
-	bool _changed = false;
-	CRGBPalette16 _palette;
+    uint8_t _startIndex = 0;
+    bool _changed = false;
+    CRGBPalette16 _palette;
 };
 
 } /* namespace fastled */

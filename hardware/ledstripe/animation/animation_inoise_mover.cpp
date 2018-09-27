@@ -17,7 +17,7 @@
 namespace fastled
 {
 
-AnimationInoiseMover::AnimationInoiseMover(CRGB *leds, uint16_t led_count, animation *animation_info)
+AnimationInoiseMover::AnimationInoiseMover(CRGB *leds, uint16_t led_count, animation_configuration_t *animation_info)
     : LedStripeAnimation(leds, led_count, animation_info)
 {
     currentPalette = LavaColors_p;
@@ -26,6 +26,11 @@ AnimationInoiseMover::AnimationInoiseMover(CRGB *leds, uint16_t led_count, anima
 
 AnimationInoiseMover::~AnimationInoiseMover()
 {
+}
+
+LedStripeAnimation *AnimationInoiseMover::create(CRGB *leds, uint16_t led_count, animation_configuration_t *animation_info)
+{
+    return new AnimationInoiseMover(leds, led_count, animation_info);
 }
 
 void AnimationInoiseMover::initialize()

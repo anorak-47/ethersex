@@ -1,5 +1,4 @@
-#ifndef FIRMWARE_LEDSTRIPE_LED_STRIPE_ANIMATION_H_
-#define FIRMWARE_LEDSTRIPE_LED_STRIPE_ANIMATION_H_
+#pragma once
 
 #include "animation_config.h"
 #include "animation_type.h"
@@ -10,7 +9,7 @@ namespace fastled
 class LedStripeAnimation
 {
 public:
-    LedStripeAnimation(CRGB *leds, uint16_t led_count, animation *animation_info);
+    LedStripeAnimation(CRGB *leds, uint16_t led_count, animation_configuration_t *animation_info);
     virtual ~LedStripeAnimation();
 
     virtual void initialize();
@@ -18,14 +17,14 @@ public:
     virtual void deinitialize();
 
     virtual void setOption(uint8_t option);
+    virtual void setOption2(uint8_t option);
+
     virtual void update();
 
 protected:
     CRGB *_leds = 0;
     uint16_t _led_count = 0;
-    animation *_animation_info = 0;
+    animation_configuration_t *_animation_info = 0;
 };
 
 } /* namespace fastled */
-
-#endif /* FIRMWARE_LEDSTRIPE_LED_STRIPE_ANIMATION_H_ */

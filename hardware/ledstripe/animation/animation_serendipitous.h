@@ -8,13 +8,15 @@ namespace fastled
 class AnimationSerendipitous : public LedStripeAnimation
 {
 public:
-    AnimationSerendipitous(CRGB *leds, uint16_t led_count, animation *animation_info);
+    static LedStripeAnimation *create(CRGB *leds, uint16_t led_count, animation_configuration_t *animation_info);
     virtual ~AnimationSerendipitous();
 
     virtual void initialize() override;
     virtual bool loop() override;
 
 protected:
+    AnimationSerendipitous(CRGB *leds, uint16_t led_count, animation_configuration_t *animation_info);
+
     void serendipitous();
 
     uint8_t maxChanges = 24; // Value for blending between palettes.

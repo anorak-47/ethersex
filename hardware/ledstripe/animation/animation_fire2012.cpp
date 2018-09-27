@@ -32,9 +32,15 @@
 namespace fastled
 {
 
-AnimationFire2012::AnimationFire2012(CRGB *leds, uint16_t led_count, animation *animation_info) : LedStripeAnimation(leds, led_count, animation_info)
+AnimationFire2012::AnimationFire2012(CRGB *leds, uint16_t led_count, animation_configuration_t *animation_info)
+    : LedStripeAnimation(leds, led_count, animation_info)
 {
     heat = (uint8_t *)malloc(_led_count);
+}
+
+LedStripeAnimation *AnimationFire2012::create(CRGB *leds, uint16_t led_count, animation_configuration_t *animation_info)
+{
+    return new AnimationFire2012(leds, led_count, animation_info);
 }
 
 AnimationFire2012::~AnimationFire2012()
@@ -53,7 +59,7 @@ void AnimationFire2012::setOption(uint8_t option)
         break;
 
     case 2:
-    	// Second, this palette is like the heat colors, but blue/aqua instead of red/yellow
+        // Second, this palette is like the heat colors, but blue/aqua instead of red/yellow
         gPal = CRGBPalette16(CRGB::Black, CRGB::Blue, CRGB::Aqua, CRGB::White);
         break;
 
@@ -63,7 +69,7 @@ void AnimationFire2012::setOption(uint8_t option)
         break;
 
     case 4:
-    	break;
+        break;
 
     case 0:
     default:
@@ -83,7 +89,7 @@ bool AnimationFire2012::loop()
     // time through the loop, based on a hue that changes every time.
     // The palette is a gradient from black, to a dark color based on the hue,
     // to a light color based on the hue, to white.
-    if (_animation_info->option >= 4)
+    if (_animation_info->option[0] >= 4)
     {
         static uint8_t hue = 0;
         hue++;

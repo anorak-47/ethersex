@@ -21,51 +21,53 @@ extern "C" {
 #define SENSOR_IDX_CURRENT 0
 #define SENSOR_IDX_REF 1
 
-struct _s_animation_type
+struct animation_configuration_s
 {
     uint8_t fps;
-    uint8_t option;
+    uint8_t option[2];
     uint8_t sensor_index[2];
     CHSV hsv[2];
 };
 
-typedef struct _s_animation_type animation;
+typedef struct animation_configuration_s animation_configuration_t;
 
 
-struct _s_led_stripe_animation_status
+struct led_stripe_animation_status_s
 {
-	animation_names current_animation;
-	animation_names sensor_animation;
+    uint8_t current_animation;
+    uint8_t sensor_animation;
     bool autoplay;
+    uint16_t autoplay_delay_msecs;
     bool is_autoswitch_sensor_animation;
-    animation animations[ANIMATION_COUNT];
+    animation_configuration_t animations[ANIMATION_COUNT];
 };
 
-typedef struct _s_led_stripe_animation_status led_stripe_animation_status;
+typedef struct led_stripe_animation_status_s led_stripe_animation_status_t;
 
 
-struct _s_led_stripe_animation
+struct led_stripe_animation_s
 {
     bool is_running;
     bool is_current_animation_running_before_switching;
-    animation_names active_animation;
+    uint8_t active_animation;
     uint16_t delay_msecs;
     uint16_t loop_timer;
+    uint16_t autoplay_timer;
 
     CRGB *leds;
     uint16_t led_count;
     fastled::LedStripeAnimation *animation;
 };
 
-typedef struct _s_led_stripe_animation led_stripe_animation;
+typedef struct led_stripe_animation_s led_stripe_animation_t;
 
-extern animation animations[ANIMATION_COUNT];
-extern animation EEMEM animations_eeprom[ANIMATION_COUNT];
+extern animation_configuration_t animations[ANIMATION_COUNT];
+extern animation_configuration_t EEMEM animations_eeprom[ANIMATION_COUNT];
 
-extern led_stripe_animation_status led_stripe_status[MAX_LED_STRIPES];
-extern led_stripe_animation_status EEMEM led_stripe_status_eeprom[MAX_LED_STRIPES];
+extern led_stripe_animation_status_t led_stripe_status[MAX_LED_STRIPES];
+extern led_stripe_animation_status_t EEMEM led_stripe_status_eeprom[MAX_LED_STRIPES];
 
-extern led_stripe_animation led_stripe[MAX_LED_STRIPES];
+extern led_stripe_animation_t led_stripe[MAX_LED_STRIPES];
 
 #ifdef __cplusplus
 }
