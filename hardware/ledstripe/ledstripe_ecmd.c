@@ -38,7 +38,7 @@
 #include "shell_animation.h"
 #include "sensor.h"
 
-#define ECMD_LEDSTRIPE_OUTPUT_SIZE 1024
+#define ECMD_LEDSTRIPE_OUTPUT_SIZE 2048
 
 char *es_output_buffer = 0;
 uint16_t es_output_buffer_len = 0;
@@ -124,10 +124,13 @@ int16_t parse_cmd_ledstripe_animation(char *cmd, char *output, uint16_t len)
 {
     char *ocmd = cmd;
     // LV_("cmd <%s> %u", cmd, (uint8_t)cmd[0]);
+    // set s# anc|asc|ani|ans|fps|apl|asw|op0/1|sn0/1|c
 
     if (cmd[0] == ECMD_STATE_MAGIC)
     {
         // LS_("magic");
+
+#ifdef ECMD_MAGIC_TOKENIZE
         char *token = strsep(&es_output_buffer, "\n");
         if (token != 0 && *token != '\0')
         {
@@ -136,6 +139,17 @@ int16_t parse_cmd_ledstripe_animation(char *cmd, char *output, uint16_t len)
             strncpy(output, token, len - 1);
             return ECMD_AGAIN(l);
         }
+#else
+        uint16_t olen = strlen(es_output_buffer);
+        if (olen > 0)
+        {
+            uint16_t l = olen > len - 1 ? len - 1 : olen;
+            strncpy(output, es_output_buffer, l);
+            es_output_buffer += l;
+            output[l + 1] = ECMD_NO_NEWLINE;
+            return ECMD_AGAIN(l + 1);
+        }
+#endif
 
         // LS_("magic ok");
         return ECMD_FINAL_OK;
@@ -154,16 +168,23 @@ int16_t parse_cmd_ledstripe_animation(char *cmd, char *output, uint16_t len)
 
         if (strlen(es_output_buffer) >= len)
         {
+#ifdef ECMD_MAGIC_TOKENIZE
             // LV_("ecmd eso %u", strlen(es_output_buffer));
             char *token = strsep(&es_output_buffer, "\n");
             uint16_t l = strlen(token);
             // LV_("tok %u %s", l, token);
             strncpy(output, token, len - 1);
+#else
+            uint16_t l = len - 1;
+            strncpy(output, es_output_buffer, l);
+            output[len] = ECMD_NO_NEWLINE;
+            es_output_buffer += l;
+#endif
 
             ocmd[0] = ECMD_STATE_MAGIC;
             ocmd[1] = 0;
 
-            return ECMD_AGAIN(l);
+            return ECMD_AGAIN(len);
         }
 
         uint16_t l = strlen(es_output_buffer);

@@ -8,6 +8,8 @@
 
 #include "../ledstripe_debug.h"
 
+#include <avr/eeprom.h>
+
 #if FASTLED_SUPPORTED
 
 //#define ANIMATION_LIMIT_FPS_BY_TIMER1
@@ -19,30 +21,33 @@
 
 using namespace fastled;
 
+// magic number to 'assure' empty/garbage eeprom sections can be detected
+#define EEPROM_CHK_MAGIC_0 (0xA5)
+#define EEPROM_CHK_MAGIC_1 (0x5A)
+
+#define EEPROM_POS_CHK_0 (uint8_t *)(100)
+#define EEPROM_POS_CHK_1 (uint8_t *)(101)
+#define EEPROM_POS_STATUS (uint8_t *)(102)
+
+uint8_t global_brightness_eeprom EEMEM = FASTLED_DEFAULT_BRIGHTNESS;
+// uint8_t chk_animation_eeprom EEMEM; // assure this variable follows the eeprom section which must be checksum-checked!
+// led_stripe_animation_status_t led_stripe_status_eeprom[MAX_LED_STRIPES] EEMEM;
+
+led_stripe_animation_status_t led_stripe_status[MAX_LED_STRIPES];
+led_stripe_animation_t led_stripe[MAX_LED_STRIPES];
+
+static uint8_t active_animation_count = 0;
+static uint16_t fld_fps = 0;
+static uint32_t now = 0;
+static bool animated = false;
+static int8_t tmax = 0;
+static bool emergency_shutdown = false;
+static bool is_constraint_matched = false;
+
 #ifdef __cplusplus
 extern "C"
 {
 #endif
-
-// magic number to 'assure' empty/garbage eeprom sections can be detected
-#define EEPROM_CHK_MAGIC (0xA5)
-    uint8_t EEMEM chk_animation_eeprom; // assure this variable follows the eeprom
-                                        // section which must be checksum-checked!
-
-    led_stripe_animation_status_t led_stripe_status[MAX_LED_STRIPES];
-    led_stripe_animation_status_t EEMEM led_stripe_status_eeprom[MAX_LED_STRIPES];
-
-    led_stripe_animation_t led_stripe[MAX_LED_STRIPES];
-
-    uint8_t EEMEM global_brightness_eeprom = FASTLED_DEFAULT_BRIGHTNESS;
-
-    static uint8_t active_animation_count = 0;
-    static uint16_t fld_fps = 0;
-    static uint32_t now = 0;
-    static bool animated = false;
-    static int8_t tmax = 0;
-    static bool emergency_shutdown = false;
-    static bool is_constraint_matched = false;
 
     void animation_reset_sensor_defaults(void)
     {
@@ -70,13 +75,14 @@ extern "C"
         {
             memset(&led_stripe[stripe], 0, sizeof(led_stripe_animation_t));
             led_stripe[stripe].delay_msecs = FPS_TO_DELAY(10);
+            led_stripe[stripe].animation = 0;
 
             memset(&led_stripe_status[stripe], 0, sizeof(led_stripe_animation_status_t));
 
             led_stripe_status[stripe].autoplay = false;
-            led_stripe_status[stripe].autoplay_delay_msecs = 30000;
+            led_stripe_status[stripe].autoplay_delay_msecs = 120000;
             led_stripe_status[stripe].is_autoswitch_sensor_animation = true;
-            led_stripe_status[stripe].current_animation = 4;
+            led_stripe_status[stripe].current_animation = 9;
             led_stripe_status[stripe].sensor_animation = ANIMATION_COUNT - 1;
 
             for (uint8_t a = 0; a < ANIMATION_COUNT; a++)
@@ -96,22 +102,24 @@ extern "C"
 
     void animation_load_stripe(uint8_t stripe)
     {
-        eeprom_read_block((void *)&(led_stripe_status[stripe]), &(led_stripe_status_eeprom[stripe]), sizeof(led_stripe_status[stripe]));
+        eeprom_read_block((void *)&led_stripe_status[stripe], EEPROM_POS_STATUS + (sizeof(led_stripe_animation_status_t) * stripe),
+                          sizeof(led_stripe_animation_status_t));
     }
 
     void animation_load(bool clear)
     {
         animation_reset();
 
+        animation_set_global_brightness(eeprom_read_byte(&global_brightness_eeprom));
+
         if (clear)
             return;
 
-        uint8_t magic = eeprom_read_byte(&chk_animation_eeprom);
+        uint8_t magic_0 = eeprom_read_byte(EEPROM_POS_CHK_0);
+        uint8_t magic_1 = eeprom_read_byte(EEPROM_POS_CHK_1);
 
-        if (magic == EEPROM_CHK_MAGIC)
+        if (magic_0 == EEPROM_CHK_MAGIC_0 && magic_1 == EEPROM_CHK_MAGIC_1)
         {
-            animation_set_global_brightness(eeprom_read_byte(&global_brightness_eeprom));
-
             for (uint8_t stripe = 0; stripe < MAX_LED_STRIPES; stripe++)
             {
                 animation_load_stripe(stripe);
@@ -122,15 +130,19 @@ extern "C"
 
     void animation_save_stripe(uint8_t stripe)
     {
-        eeprom_update_block((void *)&(led_stripe_status[stripe]), &(led_stripe_status_eeprom[stripe]), sizeof(led_stripe_status[stripe]));
+        eeprom_update_block((void *)&led_stripe_status[stripe], EEPROM_POS_STATUS + (sizeof(led_stripe_animation_status_t) * stripe),
+                            sizeof(led_stripe_animation_status_t));
     }
 
     void animation_save(void)
     {
+        eeprom_update_byte(&global_brightness_eeprom, animation_get_global_brightness());
+
         for (uint8_t i = 0; i < MAX_LED_STRIPES; i++)
             animation_save_stripe(i);
-        eeprom_update_byte(&global_brightness_eeprom, animation_get_global_brightness());
-        eeprom_update_byte(&chk_animation_eeprom, EEPROM_CHK_MAGIC);
+
+        eeprom_update_byte(EEPROM_POS_CHK_0, EEPROM_CHK_MAGIC_0);
+        eeprom_update_byte(EEPROM_POS_CHK_1, EEPROM_CHK_MAGIC_1);
     }
 
     void animation_init(void)
@@ -145,6 +157,9 @@ extern "C"
     void animation_start(uint8_t stripe)
     {
         LV_("astart %u r:%u", stripe, led_stripe[stripe].is_running);
+
+        if (!led_stripe[stripe].is_running && led_stripe[stripe].animation == 0)
+            animation_set_for_stripe_by_index(stripe, animation_get_current_animation(stripe));
 
         if (!led_stripe[stripe].is_running && led_stripe[stripe].animation)
         {
@@ -242,10 +257,11 @@ extern "C"
             id = 0;
         }
 
+        animation_set_current_animation(stripe, id);
         animation_set_active_animation(stripe, id);
 
         if (!animation_get_running(stripe))
-            animation_set_running(stripe, true);
+            animation_start(stripe);
 
         return id;
     }
@@ -262,10 +278,11 @@ extern "C"
             id = ANIMATION_COUNT - 2;
         }
 
+        animation_set_current_animation(stripe, id);
         animation_set_active_animation(stripe, id);
 
         if (!animation_get_running(stripe))
-            animation_set_running(stripe, true);
+            animation_start(stripe);
 
         return id;
     }
@@ -501,7 +518,7 @@ extern "C"
 
     void switch_to_sensor_animation_if_constraint_matches(uint8_t stripe)
     {
-        if (!animation_is_autoswitch_to_sensor_animation(stripe))
+        if (!animation_is_autoswitch_to_sensor_animation(stripe) || animation_get_autoplay(stripe))
             return;
 
         uint8_t requested_animation;

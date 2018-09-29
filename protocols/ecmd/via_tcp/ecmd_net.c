@@ -33,14 +33,14 @@
 
 #include <string.h>
 
-#define BUF ((struct uip_udpip_hdr *) (uip_appdata - UIP_IPUDPH_LEN))
+#define BUF ((struct uip_udpip_hdr *)(uip_appdata - UIP_IPUDPH_LEN))
 
 /* module local prototypes */
 void newdata(void);
 
 void ecmd_net_init()
 {
-  /* Without teensy support we use tcp */
+    /* Without teensy support we use tcp */
     uip_listen(HTONS(ECMD_TCP_PORT), ecmd_net_main);
 }
 
@@ -48,9 +48,9 @@ void newdata(void)
 {
     struct ecmd_connection_state_t *state = &uip_conn->appstate.ecmd;
 
-
     uint16_t diff = ECMD_INPUTBUF_LENGTH - state->in_len;
-    if (diff > 0) {
+    if (diff > 0)
+    {
         int cplen;
 
         if (uip_datalen() <= diff)
@@ -64,7 +64,9 @@ void newdata(void)
 #ifdef DEBUG_ECMD_NET
         debug_printf("copied %d bytes\n", cplen);
 #endif
-    } else {
+    }
+    else
+    {
 #ifdef DEBUG_ECMD_NET
         debug_printf("buffer full\n");
 #endif
@@ -72,8 +74,8 @@ void newdata(void)
 
     char *lf = memchr(state->inbuf, '\n', state->in_len);
 
-    if (lf != NULL ||
-        memchr(uip_appdata, '\n', uip_datalen()) != NULL) {
+    if (lf != NULL || memchr(uip_appdata, '\n', uip_datalen()) != NULL)
+    {
 
 #ifdef DEBUG_ECMD_NET
         debug_printf("calling parser\n");
@@ -82,80 +84,91 @@ void newdata(void)
         if (lf)
             *lf = '\0';
         else
-            state->inbuf[ECMD_INPUTBUF_LENGTH-1] = '\0';
+            state->inbuf[ECMD_INPUTBUF_LENGTH - 1] = '\0';
 
         /* kill \r */
         int l;
         for (l = 0; l < ECMD_INPUTBUF_LENGTH; l++)
-          if (state->inbuf[l] == '\r')
-            state->inbuf[l] = '\0';
+            if (state->inbuf[l] == '\r')
+                state->inbuf[l] = '\0';
 
         /* if the first character is ! close the connection after the last
          * byte is sent
          */
         uint8_t skip = 0;
-        if (state->inbuf[0] == '!') {
-          skip = 1;
-          state->close_requested = 1;
+        if (state->inbuf[0] == '!')
+        {
+            skip = 1;
+            state->close_requested = 1;
         }
-      
+
 #ifdef ECMD_PAM_SUPPORT
-        if (state->pam_state == PAM_UNKOWN) {
-          if (strncmp_P(state->inbuf + skip, PSTR("auth "), 5) != 0) { 
-            /* No authentification request */
-auth_required:
-            state->out_len = sprintf_P(state->outbuf, 
-                                       PSTR("authentification required\n"));
-            memset(state->inbuf, 0, ECMD_INPUTBUF_LENGTH);
-            state->in_len = 0;
-            return;          
-          } else {
-            char *user = state->inbuf + skip + 5; /* "auth " */
-            char *pass = strchr(user + 1,' ');
-            if (! pass) goto auth_required;
-            *pass = 0;
-            do { pass++; } while (*pass == ' ');
-            char *p = strchr(pass, ' ');
-            if (p) 
-              *p = 0;
-            /* Do the Pam request, the pam request will cache username and
-             * passwort if its necessary. */
-            pam_auth(user, pass, &state->pam_state);
-
-	    // send authentification successfull message
-	    if (state->pam_state == PAM_SUCCESS) {
-	      state->out_len = sprintf_P(state->outbuf, PSTR("authentification successful\n"));
-	      uip_send(state->outbuf, state->out_len);
-	    }
-
-            if (p && p[1] != 0) { /* There ist something after the PAM request */
-              memmove(state->inbuf, p+1, strlen(p+1) + 1);
-              skip = 0;
-              state->in_len = strlen(p+1);
-              if (state->pam_state == PAM_PENDING)
-                state->parse_again = 1;
-            } else {
-              state->in_len = 0;
-              return;
+        if (state->pam_state == PAM_UNKOWN)
+        {
+            if (strncmp_P(state->inbuf + skip, PSTR("auth "), 5) != 0)
+            {
+                /* No authentification request */
+            auth_required:
+                state->out_len = sprintf_P(state->outbuf, PSTR("authentification required\n"));
+                memset(state->inbuf, 0, ECMD_INPUTBUF_LENGTH);
+                state->in_len = 0;
+                return;
             }
-          }
+            else
+            {
+                char *user = state->inbuf + skip + 5; /* "auth " */
+                char *pass = strchr(user + 1, ' ');
+                if (!pass)
+                    goto auth_required;
+                *pass = 0;
+                do
+                {
+                    pass++;
+                } while (*pass == ' ');
+                char *p = strchr(pass, ' ');
+                if (p)
+                    *p = 0;
+                /* Do the Pam request, the pam request will cache username and
+                 * passwort if its necessary. */
+                pam_auth(user, pass, &state->pam_state);
+
+                // send authentification successfull message
+                if (state->pam_state == PAM_SUCCESS)
+                {
+                    state->out_len = sprintf_P(state->outbuf, PSTR("authentification successful\n"));
+                    uip_send(state->outbuf, state->out_len);
+                }
+
+                if (p && p[1] != 0)
+                { /* There ist something after the PAM request */
+                    memmove(state->inbuf, p + 1, strlen(p + 1) + 1);
+                    skip = 0;
+                    state->in_len = strlen(p + 1);
+                    if (state->pam_state == PAM_PENDING)
+                        state->parse_again = 1;
+                }
+                else
+                {
+                    state->in_len = 0;
+                    return;
+                }
+            }
         }
         if (state->pam_state == PAM_PENDING || state->pam_state == PAM_DENIED)
-          return; /* Pam Subsystem promisses to change this state */
+            return; /* Pam Subsystem promisses to change this state */
 #endif
 
         /* parse command and write output to state->outbuf, reserving at least
          * one byte for the terminating \n */
-        l = ecmd_parse_command(state->inbuf + skip,
-                                    state->outbuf,
-                                    ECMD_OUTPUTBUF_LENGTH-1);
+        l = ecmd_parse_command(state->inbuf + skip, state->outbuf, ECMD_OUTPUTBUF_LENGTH - 1);
 
 #ifdef DEBUG_ECMD_NET
         debug_printf("parser returned %d\n", l);
 #endif
 
         /* check if the parse has to be called again */
-        if (is_ECMD_AGAIN(l)) {
+        if (is_ECMD_AGAIN(l))
+        {
 #ifdef DEBUG_ECMD_NET
             debug_printf("parser needs to be called again\n");
 #endif
@@ -168,12 +181,15 @@ auth_required:
         debug_printf("parser really returned %d\n", l);
 #endif
 
-        if (l > 0) {
-            if (state->outbuf[l] != ECMD_NO_NEWLINE) state->outbuf[l++] = '\n';
+        if (l > 0)
+        {
+            if (state->outbuf[l] != ECMD_NO_NEWLINE)
+                state->outbuf[l++] = '\n';
             state->out_len = l;
         }
 
-        if (!state->parse_again) {
+        if (!state->parse_again)
+        {
 #ifdef DEBUG_ECMD_NET
             debug_printf("clearing buffer\n");
 #endif
@@ -187,13 +203,15 @@ void ecmd_net_main(void)
 {
     struct ecmd_connection_state_t *state = &uip_conn->appstate.ecmd;
 
-    if (!uip_poll()) {
+    if (!uip_poll())
+    {
 #ifdef DEBUG_ECMD_NET
         debug_printf("ecmd_net_main()\n");
 #endif
     }
 
-    if(uip_connected()) {
+    if (uip_connected())
+    {
 #ifdef DEBUG_ECMD_NET
         debug_printf("new connection\n");
 #endif
@@ -208,23 +226,24 @@ void ecmd_net_main(void)
     }
 
 #ifdef ECMD_PAM_SUPPORT
-        if (state->pam_state == PAM_DENIED) {
-          state->out_len = sprintf_P(state->outbuf, 
-                                     PSTR("authentification failed\n"));
-          state->close_requested = 1;
-        }
+    if (state->pam_state == PAM_DENIED)
+    {
+        state->out_len = sprintf_P(state->outbuf, PSTR("authentification failed\n"));
+        state->close_requested = 1;
+    }
 #endif
 
-
-    if(uip_acked()
+    if (uip_acked()
 #ifdef ECMD_PAM_SUPPORT
-        || (state->pam_state == PAM_SUCCESS && state->in_len) 
+        || (state->pam_state == PAM_SUCCESS && state->in_len)
 #endif
-       
-       ) {
+
+    )
+    {
         state->out_len = 0;
 
-        if (state->parse_again) {
+        if (state->parse_again)
+        {
 #ifdef DEBUG_ECMD_NET
             debug_printf("transmission done, calling parser again\n");
 #endif
@@ -232,50 +251,54 @@ void ecmd_net_main(void)
              * byte is sent
              */
             uint8_t skip = 0;
-            if (state->inbuf[0] == '!') {
-              skip = 1;
-              state->close_requested = 1;
+            if (state->inbuf[0] == '!')
+            {
+                skip = 1;
+                state->close_requested = 1;
             }
 
             /* parse command and write output to state->outbuf, reserving at least
              * one byte for the terminating \n */
-            int l = ecmd_parse_command(state->inbuf + skip,
-                    state->outbuf,
-                    ECMD_OUTPUTBUF_LENGTH-1);
+            int l = ecmd_parse_command(state->inbuf + skip, state->outbuf, ECMD_OUTPUTBUF_LENGTH - 1);
 
             /* check if the parse has to be called again */
-            if (is_ECMD_AGAIN(l)) {
+            if (is_ECMD_AGAIN(l))
+            {
                 state->parse_again = 1;
                 l = ECMD_AGAIN(l);
-            } else {
+            }
+            else
+            {
                 state->parse_again = 0;
                 /* We have to clear the input buffer */
                 state->in_len = 0;
             }
 
-            if (l > 0) {
-                state->outbuf[l++] = '\n';
+            if (l > 0)
+            {
+                if (state->outbuf[l] != ECMD_NO_NEWLINE)
+                    state->outbuf[l++] = '\n';
                 state->out_len = l;
             }
         }
     }
 
-    if(uip_newdata()) {
+    if (uip_newdata())
+    {
         newdata();
     }
 
-    if(uip_rexmit() ||
-            uip_newdata() ||
-            uip_acked() ||
-            uip_connected() ||
-            uip_poll()) {
-        if (state->out_len > 0) {
+    if (uip_rexmit() || uip_newdata() || uip_acked() || uip_connected() || uip_poll())
+    {
+        if (state->out_len > 0)
+        {
 #ifdef DEBUG_ECMD_NET
             debug_printf("sending %d bytes\n", state->out_len);
 #endif
             uip_send(state->outbuf, state->out_len);
-        } else if (state->close_requested)
-          uip_close();
+        }
+        else if (state->close_requested)
+            uip_close();
     }
 }
 

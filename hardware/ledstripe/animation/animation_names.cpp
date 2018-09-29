@@ -39,8 +39,6 @@ animation_description_t animation_description;
 const animation_description_t animation_description_list[ANIMATION_COUNT] PROGMEM = {
     {"basic", "Basic tests", "0:color, 1:blink, 2:mover", &AnimationBasicTests::create},
 
-    //{"little", "Some little animations", "0:Rainbow, 1:Rainbow w/Glitter, 2:Confetti, 3:Sinelon, 4:BPM, 5:Juggle", &AnimationLittle::create},
-
     {"rainbow", "Rainbow", 0, &AnimationLittleRainbow::create},
     {"glitter", "Rainbow with Glitter", 0, &AnimationLittleRainbowWithGlitter::create},
     {"confetti", "Confetti", 0, &AnimationLittleConfetti::create},
@@ -86,7 +84,8 @@ const animation_description_t animation_description_list[ANIMATION_COUNT] PROGME
     {"oceanTwinkles", "Ocean Twinkles", 0, &AnimationTwinklesOceanTwinkles::create},
 
     // The animated palette. Must be the last one.
-    {"sensor", "Palette animated by sensors", "0:c1/c0, 1:c0/c1, 2:?, 3:?, 4:HeatMap, 5:red/yellow/white, 6:blue/red, 7:sherbert",
+    {"sensor", "Palette animated by sensors",
+     "0:c0/c1 1:sunset 2:summer 3:sherbert 4:dusk 5:pinky 6:bradyfun 7:heatmap 8:cp3642 9:cp3795 10:cp1524 11:1946 12:coo0 13:coo1",
      &AnimationSensor::create},
 };
 
