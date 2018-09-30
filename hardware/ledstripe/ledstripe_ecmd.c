@@ -114,7 +114,7 @@ int16_t parse_cmd_ledstripe_sensor(char *cmd, char *output, uint16_t len)
         return ECMD_FINAL(snprintf_P(output, len, PSTR("no sensor detected")));
 
 #ifdef ECMD_MIRROR_REQUEST
-    return ECMD_FINAL(snprintf_P(output, len, PSTR("sns %u %d.%04u"), index, sensors_get_value8(index), (uint16_t)sensors_get_fraction(index) * 625));
+    return ECMD_FINAL(snprintf_P(output, len, PSTR("sns %u %d.%04u"), index, sensors_get_value(index), (uint16_t)sensors_get_fraction(index) * 625));
 #else
     return ECMD_FINAL(snprintf_P(output, len, PSTR("%d.%04u"), sensors_get_value(index), (uint16_t)sensors_get_fraction(index) * 625));
 #endif
@@ -143,11 +143,19 @@ int16_t parse_cmd_ledstripe_animation(char *cmd, char *output, uint16_t len)
         uint16_t olen = strlen(es_output_buffer);
         if (olen > 0)
         {
-            uint16_t l = olen > len - 1 ? len - 1 : olen;
-            strncpy(output, es_output_buffer, l);
-            es_output_buffer += l;
-            output[l + 1] = ECMD_NO_NEWLINE;
-            return ECMD_AGAIN(l + 1);
+            if (olen > len - 1)
+            {
+                uint16_t l = len - 1;
+                strncpy(output, es_output_buffer, l);
+                es_output_buffer += l;
+                output[l + 1] = ECMD_NO_NEWLINE;
+                return ECMD_AGAIN(l + 1);
+            }
+            else
+            {
+                strncpy(output, es_output_buffer, len);
+                return ECMD_FINAL(olen);
+            }
         }
 #endif
 

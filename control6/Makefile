@@ -9,7 +9,7 @@ $(CONTROL6_SUPPORT)_SRC += control6/control6.c
 # generic fluff
 include $(TOPDIR)/scripts/rules.mk
 
-C6_SOURCE ?= $(TOPDIR)/control6/control6.src
+C6_SOURCE ?= $(TOPDIR)/control6/df.src
 
 CONTROL6_C_SRC = ${m4_lang} ${C6_SOURCE}
 CONTROL6_H_SRC = $(TOPDIR)/control6/control6-header.m4 $(C6_SOURCE)

@@ -38,7 +38,7 @@ extern "C"
         uint8_t current_animation;
         uint8_t sensor_animation;
         bool autoplay;
-        uint16_t autoplay_delay_msecs;
+        uint32_t autoplay_delay_msecs;
         bool is_autoswitch_sensor_animation;
         animation_configuration_t animations[ANIMATION_COUNT];
     };
@@ -52,7 +52,7 @@ extern "C"
         uint8_t active_animation;
         uint16_t delay_msecs;
         uint16_t loop_timer;
-        uint16_t autoplay_timer;
+        uint32_t autoplay_timer;
 
         CRGB *leds;
         uint16_t led_count;

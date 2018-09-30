@@ -27,32 +27,6 @@ LedStripeAnimation *AnimationSensor::create(CRGB *leds, uint16_t led_count, anim
     return new AnimationSensor(leds, led_count, animation_info);
 }
 
-void AnimationSensor::updateSimulation()
-{
-    if (simulate)
-    {
-        EVERY_N_SECONDS((TMAX_SIMULATE - TREF) * 5)
-        {
-            if (simulated_sensor_dir_up)
-            {
-                simulated_sensor++;
-                if (simulated_sensor > TMAX_SIMULATE)
-                {
-                    simulated_sensor_dir_up = false;
-                }
-            }
-            else
-            {
-                simulated_sensor--;
-                if (simulated_sensor < TREF)
-                {
-                    simulated_sensor_dir_up = true;
-                }
-            }
-        }
-    }
-}
-
 void AnimationSensor::initialize()
 {
     delta = 0;
@@ -62,7 +36,7 @@ void AnimationSensor::initialize()
     simulated_sensor = TREF;
     simulate = false;
 
-    setOption(0);
+    setOption(3);
     _movingPalette = CRGBPalette16(CRGB::DarkSlateBlue, CRGB::DarkSlateBlue);
 }
 
@@ -174,6 +148,8 @@ void AnimationSensor::setOption(uint8_t option)
 {
     _option = option;
 
+    LV_("op0 %u", option);
+
     switch (option)
     {
     case 0:
@@ -219,17 +195,52 @@ void AnimationSensor::setOption(uint8_t option)
         _palette = coolors_1_gp;
         break;
     default:
-        LV_("opt oor %u", option);
+        LV_("op0 oor %u", option);
         break;
     }
 
     old_delta = 0;
 }
 
+void AnimationSensor::updateSimulation()
+{
+    if (simulate)
+    {
+        EVERY_N_SECONDS(1)
+        {
+            if (simulated_sensor_dir_up)
+            {
+                simulated_sensor++;
+                if (simulated_sensor >= TMAX_SIMULATE)
+                {
+                    simulated_sensor_dir_up = false;
+                }
+            }
+            else
+            {
+                simulated_sensor--;
+                if (simulated_sensor <= TREF)
+                {
+                    simulated_sensor_dir_up = true;
+                }
+            }
+
+            LV_("sim: %u\n", simulated_sensor);
+        }
+    }
+}
+
 void AnimationSensor::updateSensors()
 {
-    sns_current_value = sensors_get_value8(_animation_info->sensor_index[SENSOR_IDX_CURRENT]);
-    sns_ref_value = sensors_get_value8(_animation_info->sensor_index[SENSOR_IDX_REF]);
+    if (simulate)
+    {
+        old_delta = delta;
+        delta = simulated_sensor - TREF;
+        return;
+    }
+
+    sns_current_value = sensors_get_value(_animation_info->sensor_index[SENSOR_IDX_CURRENT]);
+    sns_ref_value = sensors_get_value(_animation_info->sensor_index[SENSOR_IDX_REF]);
 
     if (sns_current_value < sns_ref_value)
         sns_current_value = sns_ref_value;
@@ -240,20 +251,7 @@ void AnimationSensor::updateSensors()
 
 bool AnimationSensor::sensorsChanged()
 {
-    // int8_t current_delta = sns_current_value - sns_ref_value;
-
-    if (simulate)
-    {
-        delta = simulated_sensor - TREF;
-    }
-
-    bool changed = (_old_delta != delta);
-    _old_delta = delta;
-
-    if (changed)
-        updatePalette();
-
-    return changed || animateByOptionValue();
+    return (old_delta != delta);
 }
 
 bool AnimationSensor::animateByOptionValue()
@@ -272,7 +270,7 @@ void AnimationSensor::updatePalette()
         startpos = endpos - TSTEPS;
     }
 
-    // LV_("snsa: d:%u %u-%u", delta, startpos, endpos);
+    // LV_("up: d:%u %u-%u", delta, startpos, endpos);
 
     _movingPalette = CRGBPalette16(ColorFromPalette(_palette, startpos), ColorFromPalette(_palette, endpos));
 }
@@ -280,8 +278,11 @@ void AnimationSensor::updatePalette()
 void AnimationSensor::setOption2(uint8_t option)
 {
     _option2 = option;
-    _old_delta = 0;
+    old_delta = 0;
     simulate = _option2 & 0x4;
+
+    LV_("op1 %u", option);
+    LV_("simulate %u", simulate);
 }
 
 void AnimationSensor::update()
@@ -306,10 +307,12 @@ void AnimationSensor::addGlitterAt(uint16_t led, fract8 chanceOfGlitter)
 
 void AnimationSensor::animate()
 {
-    // EVERY_N_MILLISECONDS(20)
-    {
-        nblendPaletteTowardPalette(_movingPalette, _targetPalette, 10);
-    }
+    /*
+        EVERY_N_MILLISECONDS(20)
+        {
+                nblendPaletteTowardPalette(_movingPalette, _targetPalette, 10);
+        }
+    */
 
     if (_option2 & 0x1)
     {
@@ -338,9 +341,13 @@ bool AnimationSensor::loop()
     updateSensors();
 
     if (sensorsChanged())
+    {
         updatePalette();
+        animate();
+        return true;
+    }
 
-    // if (sensorsChanged() || animateByOptionValue())
+    if (animateByOptionValue())
     {
         animate();
         return true;

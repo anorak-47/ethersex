@@ -49,6 +49,9 @@ extern "C"
     void animation_set_autoplay(uint8_t stripe, bool autoplay);
     bool animation_get_autoplay(uint8_t stripe);
 
+    uint16_t animation_get_autoplay_delay_time(uint8_t stripe);
+    void animation_set_autoplay_delay_time(uint8_t stripe, uint16_t autoplay_delay_secs);
+
     void animation_set_fps(uint8_t stripe, uint8_t animation, uint8_t fps);
     uint8_t animation_get_fps(uint8_t stripe, uint8_t animation);
 

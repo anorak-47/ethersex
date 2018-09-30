@@ -324,6 +324,16 @@ extern "C"
         led_stripe_status[stripe].autoplay = autoplay;
     }
 
+    uint16_t animation_get_autoplay_delay_time(uint8_t stripe)
+    {
+        return led_stripe_status[stripe].autoplay_delay_msecs / 1000UL;
+    }
+
+    void animation_set_autoplay_delay_time(uint8_t stripe, uint16_t autoplay_delay_secs)
+    {
+        led_stripe_status[stripe].autoplay_delay_msecs = 1000UL * autoplay_delay_secs;
+    }
+
     void animation_set_color(uint8_t stripe, uint8_t animation, uint8_t cnr, uint8_t *hsv)
     {
         if (cnr > 1)
@@ -466,7 +476,7 @@ extern "C"
 
     bool is_emergency_shutdown_power_on_supply_overheating()
     {
-        int8_t temp = sensors_get_value8(SENSOR_SUPPLY);
+        int8_t temp = sensors_get_value(SENSOR_SUPPLY);
         return (temp > 45);
     }
 
@@ -510,8 +520,6 @@ extern "C"
             is_constraint_matched = false;
             tmax = 0;
         }
-
-        // LV_("[%u] sns %i %i d:%i", stripe, sns_current_value, sns_ref_value, delta);
 
         return matches;
     }
@@ -624,7 +632,7 @@ extern "C"
                 }
 
                 if (led_stripe_status[stripe].autoplay &&
-                    timer_elapsed(led_stripe[stripe].autoplay_timer) >= led_stripe_status[stripe].autoplay_delay_msecs)
+                    timer_elapsed32(led_stripe[stripe].autoplay_timer) >= led_stripe_status[stripe].autoplay_delay_msecs)
                 {
                     animation_set_next_animation_active(stripe);
                 }

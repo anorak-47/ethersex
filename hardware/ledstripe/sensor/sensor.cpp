@@ -107,7 +107,7 @@ extern "C"
         return sensors[index].value;
     }
 
-    int8_t sensors_get_value8(uint8_t index)
+    int8_t sensors_get_value(uint8_t index)
     {
         if (index >= MAX_SENSORS)
             return 0;
@@ -123,12 +123,13 @@ extern "C"
         return (sensors[index].value & 0x0F);
     }
 
-    void sensors_set_value8(uint8_t index, int8_t value)
+    void sensors_set_value(uint8_t index, int8_t value)
     {
         if (index >= MAX_SENSORS)
             return;
 
-        sensors[index].value = (int16_t)value << 4 | (sensors[index].value | 0x0F);
+        uint16_t fraction = (sensors[index].value & 0x0F);
+        sensors[index].value = (((int16_t)value) << 4) | fraction;
     }
 
     void sensors_set_fraction(uint8_t index, uint8_t fraction)
@@ -136,7 +137,8 @@ extern "C"
         if (index >= MAX_SENSORS)
             return;
 
-        sensors[index].value = (sensors[index].value | 0xFFF0) | (fraction | 0x0F);
+        uint16_t value = (sensors[index].value & 0xFFF0);
+        sensors[index].value = value | (fraction & 0x0F);
     }
 
 #ifdef __cplusplus

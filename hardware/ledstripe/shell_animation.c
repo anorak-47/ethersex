@@ -45,14 +45,14 @@ void option_help_configure_animation();
 
 const struct _s_shell_cmd animation_shell_cmd[] PROGMEM = {
     SHELLCMD("help", cmd_help, "", "this help", 0),
-    SHELLCMD("sta", cmd_status, "s#", "get status for stripe s#", 0),
+    SHELLCMD("sta", cmd_status, "s#", "get status for strand s#", 0),
     SHELLCMD("run", cmd_run, "s# 0|1|cyc v", "start/stop/cycle running animation", 0),
-    SHELLCMD("set", cmd_animation, "s# anc|asc|ani|ans|fps|apl|asw|op0/1|sn0/1|co0/1 v", "get/set configuration for stripe s#",
+    SHELLCMD("set", cmd_animation, "s# anc|asc|ani|ans|fps|apl|asw|op0/1|sn0/1|co0/1 v", "get/set configuration for strand s#",
              option_help_animation),
     SHELLCMD("cnf", cmd_configure_animation, "s# a# [fps|op0/1|sn0/1|co0/1 [v]]", "get/set configuration for animation a#",
              option_help_configure_animation),
-    SHELLCMD("glo", cmd_global_configuration, "fps|bri [v]", "get/set global configuration for all stripes", 0),
-    SHELLCMD("eem", cmd_manage_settings, "load|clear|save", "load/clear/save settings for all stripe", 0),
+    SHELLCMD("glo", cmd_global_configuration, "fps|bri [v]", "get/set global configuration for all strands", 0),
+    SHELLCMD("eem", cmd_manage_settings, "load|clear|save", "load/clear/save settings for all strand", 0),
     SHELLCMD("lst", cmd_animation_desc, "[#a]", "list all or show description for animation #a", 0),
     SHELLCMD("sns", cmd_sensor, "upd|s# [v] [f]", "get/set sensor value [fraction]; upd forces update", 0),
 #ifdef DEBUG_FUNCTIONS_SUPPORTED
@@ -67,7 +67,7 @@ const struct _s_shell_cmd animation_shell_cmd[] PROGMEM = {
 
 void option_help_animation()
 {
-    CATOUT("set <stripe#> <cmd> [value]\n")
+    CATOUT("set <strand#> <cmd> [value]\n")
     CMD_CATOUT("cyc: cycle to next/previous animation\n");
     CMD_CATOUT("anc: active animation\n");
     CMD_CATOUT("asc: active sensor animation\n");
@@ -82,7 +82,7 @@ void option_help_animation()
 
 void option_help_configure_animation()
 {
-    CATOUT("cnf <stripe#> <ani#> <cmd> [value]")
+    CATOUT("cnf <strand#> <ani#> <cmd> [value]")
     CMD_CATOUT("fps: frames per second\n");
     CMD_CATOUT("op0/1: option 0/1\n");
     CMD_CATOUT("sn0/1: sensor 0/1\n");
@@ -148,13 +148,14 @@ void dump_current_status(uint8_t stripe)
     animation_get_current_color(stripe, 1, hsv);
     CATSPRINTF(".co1 %x %x %x\n", hsv[0], hsv[1], hsv[2]);
 #else
-    CATSPRINTF("stripe: %u\n", stripe);
+    CATSPRINTF("strand: %u\n", stripe);
     CATSPRINTF("running: %u \n", animation_get_running(stripe));
     CATSPRINTF("active animation: %u \n", animation_get_active_animation(stripe));
     CATSPRINTF("current animation: %u\n", animation_get_current_animation(stripe));
     CATSPRINTF("sensor animation: %u\n", animation_get_sensor_animation(stripe));
     CATSPRINTF("autoswitch %u\n", animation_is_autoswitch_to_sensor_animation(stripe));
     CATSPRINTF("autoplay %u\n", animation_get_autoplay(stripe));
+    CATSPRINTF("apl time %u\n", animation_get_autoplay_delay_time(stripe));
     CATSPRINTF("fps: %u\n", animation_get_current_fps(stripe));
     CATSPRINTF("option 0: %u\n", animation_get_current_option_0(stripe));
     CATSPRINTF("option 1: %u\n", animation_get_current_option_1(stripe));
@@ -188,7 +189,7 @@ void dump_configuration_for_animation(uint8_t stripe, uint8_t animation)
     animation_get_color(stripe, animation, 1, hsv);
     CATSPRINTF(".co1 %x %x %x\n", hsv[0], hsv[1], hsv[2]);
 #else
-    CATSPRINTF("stripe: %u\n", stripe);
+    CATSPRINTF("strand: %u\n", stripe);
     CATSPRINTF("animation: %u\n", animation);
     CATSPRINTF("fps: %u\n", animation_get_fps(stripe, animation));
     CATSPRINTF("option 0: %u\n", animation_get_option(stripe, animation, 0));
@@ -298,7 +299,7 @@ bool cmd_sensor(uint8_t argc, char **argv)
         CATOUT("sns\n");
         for (uint8_t index = 0; index < MAX_SENSORS; ++index)
         {
-            CATSPRINTF(".sns %u %d.%04u\n", index, sensors_get_value8(index), (uint16_t)sensors_get_fraction(index) * 625);
+            CATSPRINTF(".sns %u %d.%04u\n", index, sensors_get_value(index), (uint16_t)sensors_get_fraction(index) * 625);
         }
         return true;
     }
@@ -319,18 +320,18 @@ bool cmd_sensor(uint8_t argc, char **argv)
     if (argc == 2)
     {
         int8_t value = atoi(argv[1]);
-        sensors_set_value8(index, value);
+        sensors_set_value(index, value);
     }
 
     else if (argc == 3)
     {
         int8_t value = atoi(argv[1]);
         uint8_t fraction = atoi(argv[2]);
-        sensors_set_value8(index, value);
+        sensors_set_value(index, value);
         sensors_set_fraction(index, fraction);
     }
 
-    SPRINTF("%u %d.%04u", index, sensors_get_value8(index), (uint16_t)sensors_get_fraction(index) * 625);
+    SPRINTF("%u %d.%04u", index, sensors_get_value(index), (uint16_t)sensors_get_fraction(index) * 625);
 
     return true;
 }
@@ -412,6 +413,12 @@ bool cmd_animation(uint8_t argc, char **argv)
         else if (strcmp_P(cmd, PSTR("apl")) == 0)
         {
             animation_set_autoplay(stripe, value);
+        }
+
+        else if (strcmp_P(cmd, PSTR("apt")) == 0)
+        {
+            uint16_t secs = atoi(argv[2]);
+            animation_set_autoplay_delay_time(stripe, secs);
         }
 
         else if (strcmp_P(cmd, PSTR("asw")) == 0)
@@ -575,14 +582,14 @@ bool cmd_configure_animation(uint8_t argc, char **argv)
 
     if (argc == 2)
     {
-        CATSPRINTF("cnf %u  %u\n", stripe, animationid);
+        CATSPRINTF("cnf %u %u\n", stripe, animationid);
         dump_configuration_for_animation(stripe, animationid);
         return true;
     }
 
     char *cmd = argv[2];
 
-    CATSPRINTF("cnf %u  %u %s", stripe, animationid, cmd);
+    CATSPRINTF("cnf %u %u %s ", stripe, animationid, cmd);
 
     if (argc == 4)
     {
