@@ -72,7 +72,8 @@ void option_help_animation()
     CMD_CATOUT("anc: active animation\n");
     CMD_CATOUT("asc: active sensor animation\n");
     CMD_CATOUT("ani: current animation\n");
-    CMD_CATOUT("ans: current sensor animation\n");
+    CMD_CATOUT("asn: current sensor animation\n");
+    CMD_CATOUT("fps: set FPS\n");
     CMD_CATOUT("apl: autoplay\n");
     CMD_CATOUT("asw: autoswitch\n");
     CMD_CATOUT("op0/1: option 0/1\n");
@@ -82,7 +83,7 @@ void option_help_animation()
 
 void option_help_configure_animation()
 {
-    CATOUT("cnf <strand#> <ani#> <cmd> [value]")
+    CATOUT("cnf <strand#> <ani#> <cmd> [value]\n")
     CMD_CATOUT("fps: frames per second\n");
     CMD_CATOUT("op0/1: option 0/1\n");
     CMD_CATOUT("sn0/1: sensor 0/1\n");

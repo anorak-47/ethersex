@@ -86,6 +86,7 @@ background: linear-gradient(to right, #64f38c, #f79d00);
 // Palettes from http://colorpalettes.net
 
 // Color Palette #3642
+// http://colorpalettes.net/color-palette-3642/
 // bright blue, bright burgundy, bright cyan, bright yellow, burgundy and saffron yellow, color of egg yolk,
 // contrast combination of colors for winter, contrasting winter color combination, gentle blue, shades of blue, yellow and blue.
 
@@ -96,7 +97,7 @@ DEFINE_GRADIENT_PALETTE(colorpalette3642_gp){0,   0x06, 0x39, 0x7d, //
                                              220, 0x91, 0x1f, 0x1e};
 
 // Color Palette #3795
-
+// http://colorpalettes.net/color-palette-3795/
 DEFINE_GRADIENT_PALETTE(colorpalette3795_gp){0,   0xa1, 0x05, 0x32, //
                                              64,  0xff, 0x6f, 0xa9, //
                                              128, 0xff, 0xd0, 0xcc, //
@@ -105,7 +106,7 @@ DEFINE_GRADIENT_PALETTE(colorpalette3795_gp){0,   0xa1, 0x05, 0x32, //
 
 // Color Palette #1524
 // Pastel turquoise basic background elevates smoky whiteness which does not prevail.
-
+// http://colorpalettes.net/color-palette-1524/
 DEFINE_GRADIENT_PALETTE(colorpalette1524_gp){0,   0x01, 0x46, 0x56, //
                                              64,  0x00, 0xa2, 0xad, //
                                              128, 0xf9, 0xf7, 0xf6, //
@@ -115,7 +116,7 @@ DEFINE_GRADIENT_PALETTE(colorpalette1524_gp){0,   0x01, 0x46, 0x56, //
 // Color Palette #1946
 // Green grass and blue sky, bright sun and summer mood – this color palette includes blue, azure, light green,
 // mustard yellow, yellow. Softer shades of green and blue look advantageous in combination with more saturated colors.
-
+// http://colorpalettes.net/color-palette-1946/
 DEFINE_GRADIENT_PALETTE(colorpalette1946_gp){0,   0xaa, 0x9c, 0x31, //
                                              64,  0xe8, 0xd5, 0x3a, //
                                              128, 0xdc, 0xec, 0x94, //
@@ -130,7 +131,7 @@ DEFINE_GRADIENT_PALETTE(coolors_0_gp){0,   36,  123, 160, //
                                       192, 243, 255, 189, //
                                       224, 255, 22,  84};
 
-// https : // coolors.co/264653-2a9d8f-e9c46a-f4a261-e76f51
+// https://coolors.co/264653-2a9d8f-e9c46a-f4a261-e76f51
 
 DEFINE_GRADIENT_PALETTE(coolors_1_gp){0,   38,  70,  83,  //
                                       64,  42,  157, 143, //

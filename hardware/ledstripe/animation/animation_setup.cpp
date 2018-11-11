@@ -9,7 +9,6 @@
 #define FASTLED_CRGBW // SK6812 hack
 #define FASTLED_MIRROR_LED_STRIPE_0
 
-
 /* Pinout
  *
  * arduino variant: 40pin
@@ -76,6 +75,7 @@ CRGB *leds_stripe_0_rgb = (CRGB *)&leds_stripe_0_rgbw[0];
 
 #define NUM_LEDS_STRIPE_1 (19)
 #define NUM_LEDS_STRIPE_1_REAL (24)
+
 CRGB leds_stripe_1[NUM_LEDS_STRIPE_1_REAL];
 CRGBW leds_stripe_1_rgbw[NUM_LEDS_STRIPE_1_REAL];
 CRGB *leds_stripe_1_rgb = (CRGB *)&leds_stripe_1_rgbw[0];
@@ -115,13 +115,7 @@ void animation_led_stripe_setup()
     FastLED.addLeds<SK6812, DATA_PIN_0, RGB>(leds_stripe_0_rgb, getRGBWsize(NUM_LEDS_STRIPE_0_REAL)).setCorrection(TypicalSMD5050);
     FastLED.addLeds<SK6812, DATA_PIN_1, RGB>(leds_stripe_1_rgb, getRGBWsize(NUM_LEDS_STRIPE_1_REAL)).setCorrection(TypicalSMD5050);
 
-    //FastLED.addLeds<SK6812, DATA_PIN_0, RGB>(leds_stripe_0_rgb, getRGBWsize(NUM_LEDS_STRIPE_0_REAL));
-    //FastLED.addLeds<SK6812, DATA_PIN_1, RGB>(leds_stripe_1_rgb, getRGBWsize(NUM_LEDS_STRIPE_1_REAL));
-
-    //FastLED.addLeds<WS2812B, DATA_PIN_0, RGB>(leds_stripe_0_rgb, getRGBWsize(NUM_LEDS_STRIPE_0_REAL));
-    //FastLED.addLeds<WS2812B, DATA_PIN_1, RGB>(leds_stripe_1_rgb, getRGBWsize(NUM_LEDS_STRIPE_1_REAL));
-
-    //FastLED.setDither(DISABLE_DITHER);
+    // FastLED.setDither(DISABLE_DITHER);
     FastLED.setDither(BINARY_DITHER);
 
     FastLED.setBrightness(FASTLED_DEFAULT_BRIGHTNESS);

@@ -480,7 +480,7 @@ extern "C"
         return (temp > 45);
     }
 
-    bool contraint_for_sensor_animation_matches(uint8_t stripe)
+    bool constraint_for_sensor_animation_matches(uint8_t stripe)
     {
         uint8_t sensor_animation = animation_get_sensor_animation(stripe);
 
@@ -531,7 +531,7 @@ extern "C"
 
         uint8_t requested_animation;
 
-        if (contraint_for_sensor_animation_matches(stripe))
+        if (constraint_for_sensor_animation_matches(stripe))
         {
             // LV_("[%u] to sensor ani", stripe);
             requested_animation = animation_get_sensor_animation(stripe);
@@ -553,13 +553,16 @@ extern "C"
 
             if (requested_animation == animation_get_sensor_animation(stripe))
             {
-                led_stripe[stripe].is_current_animation_running_before_switching = animation_was_running;
+                led_stripe_status[stripe].is_current_animation_running_before_switching = animation_was_running;
+                led_stripe_status[stripe].old_current_animation = animation_get_current_animation(stripe);
                 // LV_("[%u] cur run %u", stripe, led_stripe[stripe].is_current_animation_running_before_switching);
+                animation_set_current_animation(stripe, animation_get_sensor_animation(stripe));
                 animation_start(stripe);
             }
             else
             {
-                if (led_stripe[stripe].is_current_animation_running_before_switching)
+                animation_set_current_animation(stripe, led_stripe_status[stripe].old_current_animation);
+                if (led_stripe_status[stripe].is_current_animation_running_before_switching)
                 {
                     // LV_("[%u] restart cur ani", stripe);
                     animation_start(stripe);
@@ -619,7 +622,7 @@ extern "C"
 
         now = millis();
 
-        animated = true;
+        animated = false;
 
         for (uint8_t stripe = 0; stripe < MAX_LED_STRIPES; stripe++)
         {
@@ -628,7 +631,7 @@ extern "C"
                 if (timer_elapsed(led_stripe[stripe].loop_timer) >= led_stripe[stripe].delay_msecs)
                 {
                     led_stripe[stripe].loop_timer = now;
-                    animated = led_stripe[stripe].animation->loop() && animated;
+                    animated = led_stripe[stripe].animation->loop() || animated;
                 }
 
                 if (led_stripe_status[stripe].autoplay &&

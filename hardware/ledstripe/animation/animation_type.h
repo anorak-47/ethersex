@@ -37,6 +37,8 @@ extern "C"
     {
         uint8_t current_animation;
         uint8_t sensor_animation;
+        bool is_current_animation_running_before_switching;
+        uint8_t old_current_animation;
         bool autoplay;
         uint32_t autoplay_delay_msecs;
         bool is_autoswitch_sensor_animation;
@@ -48,7 +50,6 @@ extern "C"
     struct led_stripe_animation_s
     {
         bool is_running;
-        bool is_current_animation_running_before_switching;
         uint8_t active_animation;
         uint16_t delay_msecs;
         uint16_t loop_timer;
