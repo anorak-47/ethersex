@@ -23,6 +23,8 @@ protected:
 
     bool gReverseDirection = false;
     CRGBPalette16 gPal;
+
+    uint8_t option = 0;
 };
 
 } /* namespace fastled */

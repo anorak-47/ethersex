@@ -89,6 +89,56 @@ void led_strands_all_back()
     FastLED.show();
 }
 
+void led_strands_test_1()
+{
+    fill_solid(leds_stripe_0, NUM_LEDS_STRIPE_0_REAL, CRGB::AliceBlue);
+    fill_solid(leds_stripe_1, NUM_LEDS_STRIPE_1_REAL, CRGB::DarkMagenta);
+
+    led_strands_prepare_before_show();
+    FastLED.show();
+}
+
+void led_strands_test_2()
+{
+    for (uint8_t i = 0; i < (NUM_LEDS_STRIPE_0 / 3); ++i)
+    {
+        leds_stripe_0[i * 3] = CRGB::Red;
+        leds_stripe_0[i * 3 + 1] = CRGB::Green;
+        leds_stripe_0[i * 3 + 2] = CRGB::Blue;
+    }
+
+    for (uint8_t i = 0; i < (NUM_LEDS_STRIPE_1 / 3); ++i)
+    {
+        leds_stripe_1[i * 3] = CRGB::Red;
+        leds_stripe_1[i * 3 + 1] = CRGB::Green;
+        leds_stripe_1[i * 3 + 2] = CRGB::Blue;
+    }
+
+    led_strands_prepare_before_show();
+    FastLED.show();
+}
+
+void led_strands_test_rgb_mover()
+{
+    static uint8_t pos = 0;
+
+    pos++;
+
+    for (uint8_t i = 0; i < (NUM_LEDS_STRIPE_0 / 3); ++i)
+    {
+        leds_stripe_0[pos + i * 3] = CRGB::Red;
+        leds_stripe_0[pos + i * 3 + 1] = CRGB::Green;
+        leds_stripe_0[pos + i * 3 + 2] = CRGB::Blue;
+    }
+
+    for (uint8_t i = 0; i < (NUM_LEDS_STRIPE_1 / 3); ++i)
+    {
+        leds_stripe_1[pos + i * 3] = CRGB::Red;
+        leds_stripe_1[pos + i * 3 + 1] = CRGB::Green;
+        leds_stripe_1[pos + i * 3 + 2] = CRGB::Blue;
+    }
+}
+
 void led_strands_prepare_before_show()
 {
 #ifdef FASTLED_MIRROR_LED_STRIPE_0
@@ -112,11 +162,13 @@ void led_strands_prepare_before_show()
 
 void led_strands_setup()
 {
+    LS_("led_strands_setup");
+
     FastLED.addLeds<SK6812, DATA_PIN_0, RGB>(leds_stripe_0_rgb, getRGBWsize(NUM_LEDS_STRIPE_0_REAL)).setCorrection(TypicalSMD5050);
     FastLED.addLeds<SK6812, DATA_PIN_1, RGB>(leds_stripe_1_rgb, getRGBWsize(NUM_LEDS_STRIPE_1_REAL)).setCorrection(TypicalSMD5050);
 
-    // FastLED.setDither(DISABLE_DITHER);
-    FastLED.setDither(BINARY_DITHER);
+    FastLED.setDither(DISABLE_DITHER);
+    // FastLED.setDither(BINARY_DITHER);
 
     FastLED.setBrightness(FASTLED_DEFAULT_BRIGHTNESS);
     FastLED.setMaxPowerInVoltsAndMilliamps(5, 6000);

@@ -1,6 +1,6 @@
-
 #include "FastLED.h"
 #include "animation_fire2012.h"
+#include "ledstripe_debug.h"
 
 // Fire2012 with programmable Color Palette
 //
@@ -50,6 +50,8 @@ AnimationFire2012::~AnimationFire2012()
 
 void AnimationFire2012::setOption(uint8_t option)
 {
+	this->option = option;
+
     switch (option)
     {
     case 1:
@@ -89,7 +91,7 @@ bool AnimationFire2012::loop()
     // time through the loop, based on a hue that changes every time.
     // The palette is a gradient from black, to a dark color based on the hue,
     // to a light color based on the hue, to white.
-    if (_animation_info->option[0] >= 4)
+    if (option >= 4)
     {
         static uint8_t hue = 0;
         hue++;

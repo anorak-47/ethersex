@@ -99,11 +99,11 @@ DEFINE_GRADIENT_PALETTE(colorpalette3642_gp){0,   0x06, 0x39, 0x7d, //
 
 // Color Palette #3795
 // http://colorpalettes.net/color-palette-3795/
-DEFINE_GRADIENT_PALETTE(colorpalette3795_gp){0,   0xa1, 0x05, 0x32, //
-                                             64,  0xff, 0x6f, 0xa9, //
+DEFINE_GRADIENT_PALETTE(colorpalette3795_gp){0,   0x00, 0x5f, 0x81, //
+                                             64,  0x00, 0xb7, 0xcc, //
                                              128, 0xff, 0xd0, 0xcc, //
-                                             192, 0x00, 0xb7, 0xcc, //
-                                             224, 0x00, 0x5f, 0x81};
+                                             192, 0xff, 0x6f, 0xa9, //
+                                             224, 0xa1, 0x05, 0x32};
 
 // Color Palette #1524
 // Pastel turquoise basic background elevates smoky whiteness which does not prevail.
@@ -118,11 +118,11 @@ DEFINE_GRADIENT_PALETTE(colorpalette1524_gp){0,   0x01, 0x46, 0x56, //
 // Green grass and blue sky, bright sun and summer mood – this color palette includes blue, azure, light green,
 // mustard yellow, yellow. Softer shades of green and blue look advantageous in combination with more saturated colors.
 // http://colorpalettes.net/color-palette-1946/
-DEFINE_GRADIENT_PALETTE(colorpalette1946_gp){0,   0xaa, 0x9c, 0x31, //
-                                             64,  0xe8, 0xd5, 0x3a, //
+DEFINE_GRADIENT_PALETTE(colorpalette1946_gp){0,   0x85, 0xc3, 0xfe, //
+                                             64,  0xb9, 0xe6, 0xf7, //
                                              128, 0xdc, 0xec, 0x94, //
-                                             192, 0xb9, 0xe6, 0xf7, //
-                                             224, 0x85, 0xc3, 0xfe};
+                                             192, 0xe8, 0xd5, 0x3a, //
+                                             224, 0xaa, 0x9c, 0x31};
 
 // https://coolors.co/247ba0-70c1b3-b2dbbf-f3ffbd-ff1654
 

@@ -6,3 +6,8 @@ void led_strands_setup(void);
 void led_strands_prepare_before_show(void);
 
 void led_strands_all_back(void);
+
+void led_strands_test_1(void);
+void led_strands_test_2(void);
+void led_strands_test_rgb_mover(void);
+

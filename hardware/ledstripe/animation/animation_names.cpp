@@ -50,7 +50,7 @@ const animation_description_t animation_description_list[ANIMATION_COUNT] PROGME
     {"palette", "Rotating Palettes", "0:Rainbow, 1:Stripes, 2:LinearStripes, 3:Clouds, 4:Party, 5:PurpleGreen, 6:Random ",
      &AnimationRotatingPalette::create},
 
-    {"fire", "Fire2012", "1:Heat, 2:red/yellow, 3:blue/aqua, 4:red/white", &AnimationFire2012::create},
+    {"fire", "Fire2012", "0:Heat, 1:red/yellow, 2:blue/aqua, 3:red/white, 4:change", &AnimationFire2012::create},
     {"inoise", "Noise on Palettes", 0, &AnimationInoiseFire::create},
     {"imover", "Noisy pixel mover", 0, &AnimationInoiseMover::create},
     {"pal", "Palette blending", 0, &AnimationInoisePal::create},
@@ -127,6 +127,8 @@ const char *get_animation_options_description(uint8_t index)
 
 void create_animation_for_strand(uint8_t strand, uint8_t index)
 {
+    LV_("create_animation_for_strand s:%u a:%u", strand, index);
+
     if (strand >= MAX_LED_STRIPES)
         return;
 
@@ -135,15 +137,13 @@ void create_animation_for_strand(uint8_t strand, uint8_t index)
 
     memcpy_P(&animation_description, &animation_description_list[index], sizeof(animation_description_t));
 
-    delete animation_state[strand].animation;
-
     strand_config[strand].id = index;
 
     animation_state[strand].id = index;
     animation_state[strand].delay_msecs = FPS_TO_DELAY(strand_config[strand].animations[index].fps);
 
-    animation_state[strand].animation =
-        animation_description.factory_function(animation_state[strand].leds, animation_state[strand].led_count, &strand_config[strand].animations[index]);
+    animation_state[strand].animation = animation_description.factory_function(animation_state[strand].leds, animation_state[strand].led_count,
+                                                                               &strand_config[strand].animations[index]);
 }
 
 #endif

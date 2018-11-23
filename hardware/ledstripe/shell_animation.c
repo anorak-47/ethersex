@@ -11,7 +11,6 @@
 
 #if FASTLED_SUPPORTED
 
-#define DEBUG_FUNCTIONS_SUPPORTED
 #define SPRINTF(fmt, args...) sprintf_P(es_output_buffer, PSTR(fmt), args)
 #define CATSPRINTF(fmt, args...)                                                                                                                     \
     {                                                                                                                                                \
@@ -41,24 +40,24 @@ void option_help_animation();
 void option_help_configure_animation();
 void option_help_status();
 
-#ifdef DEBUG_FUNCTIONS_SUPPORTED
-#endif
-
 const struct _s_shell_cmd animation_shell_cmd[] PROGMEM = {
     SHELLCMD("help", cmd_help, "", "this help", 0),
     SHELLCMD("sta", cmd_status, "s# [rum|sde]", "get status for strand s#", option_help_status),
     SHELLCMD("run", cmd_run, "s# 0|1|cyc v", "start/stop/cycle running animation", 0),
-    SHELLCMD("set", cmd_animation, "s# ani|anr|fps|apl|aru|sde|op0/1|sn0/1|co0/1 v", "get/set configuration for strand s#", option_help_animation),
-    SHELLCMD("cnf", cmd_configure_animation, "s# a# [fps|op0/1|sn0/1|co0/1 [v]]", "get/set configuration for animation a#", option_help_configure_animation),
+    SHELLCMD("set", cmd_animation, "s# ani|anr|fps|apl|apt|aru|sde|op0/1|sn0/1|co0/1 v", "get/set configuration for strand s#", option_help_animation),
+    SHELLCMD("cnf", cmd_configure_animation, "s# a# [fps|op0/1|sn0/1|co0/1 [v]]", "get/set configuration for animation a#",
+             option_help_configure_animation),
     SHELLCMD("glo", cmd_global_configuration, "fps|bri [v]", "get/set global configuration for all strands", 0),
     SHELLCMD("eem", cmd_manage_settings, "load|clear|save", "load/clear/save settings for all strand", 0),
     SHELLCMD("lst", cmd_animation_desc, "[#a]", "list all or show description for animation #a", 0),
     SHELLCMD("sns", cmd_sensor, "upd|s# [v] [f]", "get/set sensor value [fraction]; upd forces update", 0),
-#ifdef DEBUG_FUNCTIONS_SUPPORTED
-#endif
     SHELLCMD(0, 0, 0, 0, 0)};
 
-#define CMD_CATOUT(fmt) { int8_t cnt = sprintf_P(es_output_buffer, PSTR("\t" fmt)); es_output_buffer += cnt; }
+#define CMD_CATOUT(fmt)                                                                                                                              \
+    {                                                                                                                                                \
+        int8_t cnt = sprintf_P(es_output_buffer, PSTR("\t" fmt));                                                                                    \
+        es_output_buffer += cnt;                                                                                                                     \
+    }
 
 void option_help_status()
 {
@@ -75,6 +74,7 @@ void option_help_animation()
     CMD_CATOUT("anr: set and run animation\n");
     CMD_CATOUT("fps: set FPS\n");
     CMD_CATOUT("apl: autoplay\n");
+    CMD_CATOUT("apt: autoplay secs\n");
     CMD_CATOUT("aru: autorun\n");
     CMD_CATOUT("sde: sensors delta\n");
     CMD_CATOUT("op0/1: option 0/1\n");
@@ -135,12 +135,12 @@ void dump_animation_state(uint8_t strand)
     CATSPRINTF("strand: %u\n", strand);
     CATSPRINTF("running: %u \n", is_strand_animation_running(strand));
     CATSPRINTF("animation: %u \n", get_animation_index(strand));
-    CATSPRINTF("animation: %s \n", get_animation_description(strand));
+    CATSPRINTF("animation: %s \n", get_animation_description(get_animation_index(strand)));
     CATSPRINTF("autorun %u\n", get_strand_autorun(strand));
-    CATSPRINTF("wasarun: %u \n", was_strand_autostarted(strand));
-    CATSPRINTF("arundlt: %u \n", get_strand_autorun_sensor_delta(strand));
-    CATSPRINTF("autoplay %u\n", get_strand_autoplay(strand));
-    CATSPRINTF("apl time %u\n", get_strand_autoplay_delay_time(strand));
+    CATSPRINTF("was arun: %u \n", was_strand_autostarted(strand));
+    CATSPRINTF("arun delta: %u \n", get_strand_autorun_sensor_delta(strand));
+    CATSPRINTF("autoplay: %u\n", get_strand_autoplay(strand));
+    CATSPRINTF("apl time: %u\n", get_strand_autoplay_delay_time(strand));
     CATSPRINTF("fps: %u\n", get_strand_fps(strand));
     CATSPRINTF("option 0: %u\n", get_strand_option_0(strand));
     CATSPRINTF("option 1: %u\n", get_strand_option_1(strand));
@@ -170,7 +170,6 @@ void dump_animation_configuartion(uint8_t strand, uint8_t animation)
     CATSPRINTF("color 0: %x %x %x\n", hsv[0], hsv[1], hsv[2]);
     get_animation_color(strand, animation, 1, hsv);
     CATSPRINTF("color 1: %x %x %x\n", hsv[0], hsv[1], hsv[2]);
-#endif
 }
 
 bool cmd_manage_settings(uint8_t argc, char **argv)
@@ -395,6 +394,11 @@ bool cmd_animation(uint8_t argc, char **argv)
             set_strand_sensor_index(stripe, 1, value);
         }
 
+        else if (strcmp_P(cmd, PSTR("tst")) == 0)
+        {
+            strand_test(value);
+        }
+
         else
         {
             return false;
@@ -492,6 +496,11 @@ bool cmd_animation(uint8_t argc, char **argv)
         uint8_t hsv[3];
         get_strand_color(stripe, 1, hsv);
         SPRINTF("%u %u %u", hsv[0], hsv[1], hsv[2]);
+    }
+
+    else if (strcmp_P(cmd, PSTR("tst")) == 0)
+    {
+        CATOUT("ok");
     }
 
     else if (strcmp_P(cmd, PSTR("rst")) == 0)

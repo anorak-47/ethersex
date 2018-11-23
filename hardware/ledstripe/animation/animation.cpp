@@ -5,7 +5,6 @@
 #include "animation_names.h"
 #include "led_stripe_animation.h"
 #include "sensor.h"
-
 #include "../ledstripe_debug.h"
 
 #include <avr/eeprom.h>
@@ -38,16 +37,12 @@ animation_state_t animation_state[MAX_LED_STRIPES];
 
 static int8_t active_animation_count = 0;
 static uint16_t fld_fps = 0;
-static uint32_t now = 0;
-static bool animated = false;
+// static uint32_t now = 0;
 
 static int8_t tmax = 0;
 static bool emergency_shutdown = false;
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
+EXTERN_C
 
 void animation_reset_sensor_defaults(void)
 {
@@ -66,6 +61,9 @@ void animation_reset_sensor_defaults(void)
         strand_config[1].animations[a].sensor_index[SENSOR_IDX_CURRENT] = SENSOR_SHOWER;
         strand_config[1].animations[a].sensor_index[SENSOR_IDX_REF] = SENSOR_REFERENCE;
     }
+
+    strand_config[0].animations[ANIMATION_COUNT - 1].option[0] = 9;
+    strand_config[1].animations[ANIMATION_COUNT - 1].option[0] = 9;
 }
 
 void animation_reset(void)
@@ -76,11 +74,8 @@ void animation_reset(void)
 
     for (uint8_t strand = 0; strand < MAX_LED_STRIPES; strand++)
     {
-        animation_stop(strand);
-
         memset(&animation_state[strand], 0, sizeof(animation_state_t));
         animation_state[strand].delay_msecs = FPS_TO_DELAY(10);
-        animation_state[strand].animation = 0;
 
         memset(&strand_config[strand], 0, sizeof(strand_configuration_t));
 
@@ -92,14 +87,10 @@ void animation_reset(void)
 
         for (uint8_t a = 0; a < ANIMATION_COUNT; a++)
         {
-            strand_config[strand].animations[a].fps = 25;
-            strand_config[strand].animations[a].sensor_index[SENSOR_IDX_CURRENT] = SENSOR_BATHTUB;
-            strand_config[strand].animations[a].sensor_index[SENSOR_IDX_REF] = SENSOR_REFERENCE;
-            strand_config[strand].animations[a].hsv[0] = CHSV(0, 255, 255);
-            strand_config[strand].animations[a].hsv[1] = CHSV(127, 255, 255);
+            strand_config[strand].animations[a].fps = 50;
+            strand_config[strand].animations[a].hsv[0] = CHSV(127, 255, 255);
+            strand_config[strand].animations[a].hsv[1] = CHSV(0, 255, 255);
         }
-
-        create_animation_for_strand(strand, strand_config[strand].id);
     }
 
     animation_reset_sensor_defaults();
@@ -107,8 +98,7 @@ void animation_reset(void)
 
 void load_strand_config(uint8_t strand)
 {
-    eeprom_read_block((void *)&strand_config[strand], EEPROM_POS_STATUS + (sizeof(strand_configuration_t) * strand),
-                      sizeof(strand_configuration_t));
+    eeprom_read_block((void *)&strand_config[strand], EEPROM_POS_STATUS + (sizeof(strand_configuration_t) * strand), sizeof(strand_configuration_t));
 }
 
 void animation_load(bool clear)
@@ -128,7 +118,6 @@ void animation_load(bool clear)
         for (uint8_t strand = 0; strand < MAX_LED_STRIPES; strand++)
         {
             load_strand_config(strand);
-            create_animation_for_strand(strand, strand_config[strand].id);
         }
     }
 }
@@ -141,7 +130,7 @@ void save_strand_config(uint8_t strand)
 
 void animation_save(void)
 {
-    eeprom_update_byte(&global_brightness_eeprom, animation_get_global_brightness());
+    eeprom_update_byte(&global_brightness_eeprom, get_strands_global_brightness());
 
     for (uint8_t i = 0; i < MAX_LED_STRIPES; i++)
         save_strand_config(i);
@@ -159,34 +148,53 @@ void animation_init(void)
     led_strands_setup();
 }
 
+void strand_test(uint8_t test)
+{
+    switch (test)
+    {
+    case 1:
+        led_strands_test_1();
+        break;
+    case 2:
+        led_strands_test_2();
+        break;
+    default:
+        led_strands_all_back();
+        break;
+    }
+}
+
 void animation_start(uint8_t strand)
 {
     LV_("animation_start s:%u r:%u", strand, animation_state[strand].is_running);
 
-    if (!animation_state[strand].is_running && animation_state[strand].animation == 0)
+    if (animation_state[strand].is_running)
+        return;
+
+    if (animation_state[strand].animation == 0)
         create_animation_for_strand(strand, strand_config[strand].id);
 
-    if (!animation_state[strand].is_running && animation_state[strand].animation)
+    if (animation_state[strand].animation)
     {
         active_animation_count++;
+
         uint8_t id = strand_config[strand].id;
+        unsigned long now = millis();
 
         animation_state[strand].is_running = true;
-        animation_state[strand].loop_timer = millis();
-        animation_state[strand].autoplay_timer = millis();
+        animation_state[strand].loop_timer = now;
+        animation_state[strand].autoplay_timer = now;
         animation_state[strand].delay_msecs = FPS_TO_DELAY(strand_config[strand].animations[id].fps);
 
         animation_state[strand].animation->initialize();
         animation_state[strand].animation->setOption(strand_config[strand].animations[id].option[0]);
         animation_state[strand].animation->setOption2(strand_config[strand].animations[id].option[1]);
-
-        LV_("animation_start cnt %u", active_animation_count);
     }
 }
 
 void animation_stop(uint8_t strand)
 {
-    LV_("animation_stop s:%u r:%u", strand, led_strand[strand].is_running);
+    LV_("animation_stop s:%u r:%u", strand, animation_state[strand].is_running);
 
     if (animation_state[strand].is_running)
     {
@@ -202,26 +210,30 @@ void animation_stop(uint8_t strand)
         {
             if (active_animation_count < 0)
             {
-                LV_("ERROR: active_animation_count < 0");
+                LS_("ERROR: active_animation_count < 0");
                 active_animation_count = 0;
             }
 
             led_strands_prepare_before_show();
             FastLED.show();
+            fld_fps = 0;
         }
+    }
 
-        LV_("animation_stop cnt %u", active_animation_count);
+    if (animation_state[strand].animation)
+    {
+        animation_state[strand].animation->deinitialize();
+        delete animation_state[strand].animation;
+        animation_state[strand].animation = 0;
     }
 }
 
 void set_strand_animation_running(uint8_t strand, bool run)
 {
-    LV_("set_running s:%u r:%u", strand, run);
+    animation_stop(strand);
 
     if (run)
         animation_start(strand);
-    else
-        animation_stop(strand);
 }
 
 uint8_t get_animation_index(uint8_t strand)
@@ -241,8 +253,6 @@ void run_animation_by_index(uint8_t strand, uint8_t animation)
 
     if (is_strand_animation_running(strand))
     {
-        animation_state[strand].was_autostarted = false;
-
         animation_stop(strand);
         animation_start(strand);
     }
@@ -265,7 +275,7 @@ uint8_t run_next_animation(uint8_t strand)
     return id;
 }
 
-uint8_t animation_set_previous_animation_active(uint8_t strand)
+uint8_t run_previous_animation(uint8_t strand)
 {
     uint8_t id = strand_config[strand].id;
     if (id > 0)
@@ -314,7 +324,7 @@ uint8_t get_animation_fps(uint8_t strand, uint8_t animation)
     return strand_config[strand].animations[animation].fps;
 }
 
-bool get_strand_autoplay_delay_time(uint8_t strand)
+bool get_strand_autoplay(uint8_t strand)
 {
     return strand_config[strand].autoplay;
 }
@@ -374,7 +384,7 @@ void get_strand_color(uint8_t strand, uint8_t cnr, uint8_t hsv[3])
     get_animation_color(strand, strand_config[strand].id, cnr, hsv);
 }
 
-void animation_set_sensor_index(uint8_t strand, uint8_t animation, uint8_t sensor, uint8_t sensor_index)
+void set_animation_sensor_index(uint8_t strand, uint8_t animation, uint8_t sensor, uint8_t sensor_index)
 {
     if (sensor_index >= MAX_SENSORS || sensor > 1)
         return;
@@ -385,21 +395,21 @@ void animation_set_sensor_index(uint8_t strand, uint8_t animation, uint8_t senso
         animation_state[strand].animation->update();
 }
 
-uint8_t animation_get_sensor_index(uint8_t strand, uint8_t animation, uint8_t sensor)
+uint8_t get_animation_sensor_index(uint8_t strand, uint8_t animation, uint8_t sensor)
 {
     if (sensor > 1)
         return 0;
     return strand_config[strand].animations[animation].sensor_index[sensor];
 }
 
-void animation_set_current_sensor_index(uint8_t strand, uint8_t sensor, uint8_t sensor_index)
+void set_strand_sensor_index(uint8_t strand, uint8_t sensor, uint8_t sensor_index)
 {
-    animation_set_sensor_index(strand, strand_config[strand].id, sensor, sensor_index);
+    set_animation_sensor_index(strand, strand_config[strand].id, sensor, sensor_index);
 }
 
-uint8_t animation_get_current_sensor_index(uint8_t strand, uint8_t sensor)
+uint8_t get_strand_sensor_index(uint8_t strand, uint8_t sensor)
 {
-    return animation_get_sensor_index(strand, strand_config[strand].id, sensor);
+    return get_animation_sensor_index(strand, strand_config[strand].id, sensor);
 }
 
 void set_strand_option_0(uint8_t strand, uint8_t option_value)
@@ -428,6 +438,8 @@ void set_animation_option(uint8_t strand, uint8_t animation, uint8_t option_id, 
 
     if (strand_config[strand].id == animation && animation_state[strand].animation)
     {
+        LV_("set_animation_option s:%u a:%u o:%u v:%u", strand, animation, option_id, option_value);
+
         if (option_id == 0)
             animation_state[strand].animation->setOption(option_value);
         else if (option_id == 1)
@@ -435,8 +447,6 @@ void set_animation_option(uint8_t strand, uint8_t animation, uint8_t option_id, 
 
         animation_state[strand].animation->update();
     }
-
-    // LV_("aso %u %u %u", strand, (animation), option_value);
 }
 
 uint8_t get_animation_option(uint8_t strand, uint8_t animation, uint8_t option_id)
@@ -471,12 +481,12 @@ bool get_strand_autorun(uint8_t strand)
 
 void set_strand_autorun_sensor_delta(uint8_t strand, int16_t delta)
 {
-    strand_config[strand].autostart_on_sensor = delta;
+    strand_config[strand].autostart_sensor_delta = delta;
 }
 
 int16_t get_strand_autorun_sensor_delta(uint8_t strand)
 {
-    return strand_config[strand].autostart_on_sensor;
+    return strand_config[strand].autostart_sensor_delta;
 }
 
 bool was_strand_autostarted(uint8_t strand)
@@ -494,6 +504,7 @@ void emergency_shutdown_power_on_supply_overheat()
     if (!emergency_shutdown)
     {
         emergency_shutdown = true;
+        printf_P(PSTR("emergency shutdown: overheating!\n"));
         led_strands_all_back();
     }
 }
@@ -508,8 +519,8 @@ bool constraint_for_sensor_animation_matches(uint8_t strand)
 {
     uint8_t animation = get_animation_index(strand);
 
-    int16_t sns_current_value = sensors_get_value16(animation_get_sensor_index(strand, animation, SENSOR_IDX_CURRENT));
-    int16_t sns_ref_value = sensors_get_value16(animation_get_sensor_index(strand, animation, SENSOR_IDX_REF));
+    int16_t sns_current_value = sensors_get_value16(get_animation_sensor_index(strand, animation, SENSOR_IDX_CURRENT));
+    int16_t sns_ref_value = sensors_get_value16(get_animation_sensor_index(strand, animation, SENSOR_IDX_REF));
 
     // LV_("[%u] idx %u %u %u", strand, sensor_animation, animation_get_sensor_index(strand, sensor_animation, SENSOR_IDX_CURRENT),
     //    animation_get_sensor_index(strand, sensor_animation, SENSOR_IDX_REF));
@@ -520,7 +531,7 @@ bool constraint_for_sensor_animation_matches(uint8_t strand)
     int16_t delta = sns_current_value - sns_ref_value;
     animation_state[strand].sensor_delta = delta;
 
-    LV_("[%u] sns %i %i d:%i", strand, sns_current_value, sns_ref_value, delta);
+    // LV_("[%u] sns %i %i d:%i", strand, sns_current_value, sns_ref_value, delta);
 
     bool matches = (delta > strand_config[strand].autostart_sensor_delta);
 
@@ -600,8 +611,8 @@ void animation_loop()
             start_animation_if_constraint_matches(strand);
         }
 
-        fld_fps = FastLED.getFPS() / 2;
-        // fld_fps = FastLED.getFPS();
+        // fld_fps = FastLED.getFPS() / 2;
+        fld_fps = FastLED.getFPS();
 
 #if DEBUG_OUTPUT_SUPPORTED && defined(ANIMATION_SHOW_FPS)
         LV_("fps: %u", fld_fps);
@@ -622,27 +633,26 @@ void animation_loop()
             emergency_shutdown = false;
     }
 
-    now = millis();
-
-    animated = false;
-
     for (uint8_t strand = 0; strand < MAX_LED_STRIPES; strand++)
     {
         if (animation_state[strand].is_running && animation_state[strand].animation)
         {
             if (timer_elapsed(animation_state[strand].loop_timer) >= animation_state[strand].delay_msecs)
             {
-                animation_state[strand].loop_timer = now;
-                animated = animation_state[strand].animation->loop() || animated;
+                animation_state[strand].loop_timer = millis();
+                animation_state[strand].animation->loop();
             }
 
             if (strand_config[strand].autoplay &&
                 timer_elapsed32(animation_state[strand].autoplay_timer) >= strand_config[strand].autoplay_delay_msecs)
             {
+                animation_state[strand].autoplay_timer = millis();
                 run_next_animation(strand);
             }
         }
     }
+
+    // led_strands_test_rgb_mover();
 
     // 1000/9 > 100fps.
     // 1000/19 > 50fps.
@@ -651,19 +661,14 @@ void animation_loop()
     // Dithering with a frame rate below 100 results in flickering LEDs...
     EVERY_N_MILLISECONDS(9)
     {
-        if (animated)
-        {
-            led_strands_prepare_before_show();
-            // call this more often than 100 times a second to enable the dithering
-            // this calls FastLED.countFPS(), too!
-            FastLED.show();
-            // calling this a second time here to fake 100fps, so we get dithering down to 50fsp
-            FastLED.countFPS();
-        }
+        led_strands_prepare_before_show();
+        // call this more often than 100 times a second to enable the dithering
+        // this calls FastLED.countFPS(), too!
+        FastLED.show();
+        // calling this a second time here to fake 100fps, so we get dithering down to 50fsp
+        // FastLED.countFPS();
     }
 }
 
-#ifdef __cplusplus
-}
-#endif
+EXTERN_C_END
 #endif
