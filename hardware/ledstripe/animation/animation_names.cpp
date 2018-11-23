@@ -125,9 +125,9 @@ const char *get_animation_options_description(uint8_t index)
     return animation_description.options;
 }
 
-void animation_set_for_stripe_by_index(uint8_t stripe, uint8_t index)
+void create_animation_for_strand(uint8_t strand, uint8_t index)
 {
-    if (stripe >= MAX_LED_STRIPES)
+    if (strand >= MAX_LED_STRIPES)
         return;
 
     if (index >= ANIMATION_COUNT)
@@ -135,13 +135,15 @@ void animation_set_for_stripe_by_index(uint8_t stripe, uint8_t index)
 
     memcpy_P(&animation_description, &animation_description_list[index], sizeof(animation_description_t));
 
-    delete led_stripe[stripe].animation;
+    delete animation_state[strand].animation;
 
-    led_stripe[stripe].active_animation = index;
-    led_stripe[stripe].delay_msecs = FPS_TO_DELAY(led_stripe_status[stripe].animations[index].fps);
+    strand_config[strand].id = index;
 
-    led_stripe[stripe].animation =
-        animation_description.factory_function(led_stripe[stripe].leds, led_stripe[stripe].led_count, &led_stripe_status[stripe].animations[index]);
+    animation_state[strand].id = index;
+    animation_state[strand].delay_msecs = FPS_TO_DELAY(strand_config[strand].animations[index].fps);
+
+    animation_state[strand].animation =
+        animation_description.factory_function(animation_state[strand].leds, animation_state[strand].led_count, &strand_config[strand].animations[index]);
 }
 
 #endif

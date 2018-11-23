@@ -80,16 +80,16 @@ CRGB leds_stripe_1[NUM_LEDS_STRIPE_1_REAL];
 CRGBW leds_stripe_1_rgbw[NUM_LEDS_STRIPE_1_REAL];
 CRGB *leds_stripe_1_rgb = (CRGB *)&leds_stripe_1_rgbw[0];
 
-void animation_all_back()
+void led_strands_all_back()
 {
     fill_solid(leds_stripe_0, NUM_LEDS_STRIPE_0_REAL, CRGB::Black);
     fill_solid(leds_stripe_1, NUM_LEDS_STRIPE_1_REAL, CRGB::Black);
 
-    animation_prepare_led_stripes_before_show();
+    led_strands_prepare_before_show();
     FastLED.show();
 }
 
-void animation_prepare_led_stripes_before_show()
+void led_strands_prepare_before_show()
 {
 #ifdef FASTLED_MIRROR_LED_STRIPE_0
     for (uint8_t i = 0; i < NUM_LEDS_STRIPE_0; ++i)
@@ -110,7 +110,7 @@ void animation_prepare_led_stripes_before_show()
     }
 }
 
-void animation_led_stripe_setup()
+void led_strands_setup()
 {
     FastLED.addLeds<SK6812, DATA_PIN_0, RGB>(leds_stripe_0_rgb, getRGBWsize(NUM_LEDS_STRIPE_0_REAL)).setCorrection(TypicalSMD5050);
     FastLED.addLeds<SK6812, DATA_PIN_1, RGB>(leds_stripe_1_rgb, getRGBWsize(NUM_LEDS_STRIPE_1_REAL)).setCorrection(TypicalSMD5050);
@@ -121,13 +121,13 @@ void animation_led_stripe_setup()
     FastLED.setBrightness(FASTLED_DEFAULT_BRIGHTNESS);
     FastLED.setMaxPowerInVoltsAndMilliamps(5, 6000);
 
-    led_stripe[0].leds = leds_stripe_0;
-    led_stripe[0].led_count = NUM_LEDS_STRIPE_0;
+    animation_state[0].leds = leds_stripe_0;
+    animation_state[0].led_count = NUM_LEDS_STRIPE_0;
 
-    led_stripe[1].leds = leds_stripe_1;
-    led_stripe[1].led_count = NUM_LEDS_STRIPE_1;
+    animation_state[1].leds = leds_stripe_1;
+    animation_state[1].led_count = NUM_LEDS_STRIPE_1;
 
-    animation_all_back();
+    led_strands_all_back();
 }
 
 #else
@@ -149,7 +149,7 @@ CRGB leds_stripe_0[NUM_LEDS_STRIPE_0];
 #define NUM_LEDS_STRIPE_1 (19)
 CRGB leds_stripe_1[NUM_LEDS_STRIPE_1];
 
-void animation_all_back()
+void led_strands_all_back()
 {
     fill_solid(leds_stripe_0, NUM_LEDS_STRIPE_0_FULL, CRGB::Black);
     fill_solid(leds_stripe_1, NUM_LEDS_STRIPE_1, CRGB::Black);
@@ -157,7 +157,7 @@ void animation_all_back()
     FastLED.show();
 }
 
-void animation_prepare_led_stripes_before_show()
+void led_strands_prepare_before_show()
 {
 #ifdef FASTLED_MIRROR_LED_STRIPE_0
     for (uint8_t i = 0; i < NUM_LEDS_STRIPE_0; ++i)
@@ -167,7 +167,7 @@ void animation_prepare_led_stripes_before_show()
 #endif
 }
 
-void animation_led_stripe_setup()
+void led_strands_setup()
 {
     FastLED.addLeds<WS2812B, DATA_PIN_0, GRB>(leds_stripe_0, NUM_LEDS_STRIPE_0_FULL).setCorrection(TypicalSMD5050);
     FastLED.addLeds<WS2812B, DATA_PIN_1, GRB>(leds_stripe_1, NUM_LEDS_STRIPE_1).setCorrection(TypicalSMD5050);
@@ -175,13 +175,13 @@ void animation_led_stripe_setup()
     FastLED.setBrightness(FASTLED_DEFAULT_BRIGHTNESS);
     FastLED.setMaxPowerInVoltsAndMilliamps(5, 1000);
 
-    led_stripe[0].leds = leds_stripe_0;
-    led_stripe[0].led_count = NUM_LEDS_STRIPE_0;
+    animation_state[0].leds = leds_stripe_0;
+    animation_state[0].led_count = NUM_LEDS_STRIPE_0;
 
-    led_stripe[1].leds = leds_stripe_1;
-    led_stripe[1].led_count = NUM_LEDS_STRIPE_1;
+    animation_state[1].leds = leds_stripe_1;
+    animation_state[1].led_count = NUM_LEDS_STRIPE_1;
 
-    animation_all_back();
+    led_strands_all_back();
 }
 
 #endif

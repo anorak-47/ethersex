@@ -14,69 +14,72 @@ extern "C"
     void animation_init(void);
     void animation_load(bool clear);
     void animation_save(void);
-    void animation_start(uint8_t stripe);
-    void animation_stop(uint8_t stripe);
+    void animation_reset(void);
+    void animation_start(uint8_t strand);
+    void animation_stop(uint8_t strand);
     void animation_loop(void);
 
-    uint16_t get_current_fld_fps(void);
+    uint16_t get_real_fastled_fps(void);
 
-    void animation_load_stripe(uint8_t stripe);
-    void animation_save_stripe(uint8_t stripe);
+    void load_strand_config(uint8_t strand);
+    void save_strand_config(uint8_t strand);
 
-    void animation_set_running(uint8_t stripe, bool running);
-    bool animation_get_running(uint8_t stripe);
+    void set_strand_animation_running(uint8_t strand, bool running);
+    bool is_strand_animation_running(uint8_t strand);
 
-    uint8_t animation_get_current_animation(uint8_t stripe);
-    void animation_set_current_animation(uint8_t stripe, uint8_t animation);
-    uint8_t animation_get_sensor_animation(uint8_t stripe);
-    void animation_set_sensor_animation(uint8_t stripe, uint8_t animation);
+    uint8_t get_animation_index(uint8_t strand);
+    void set_animation_by_index(uint8_t strand, uint8_t animation);
+    void run_animation_by_index(uint8_t strand, uint8_t animation);
 
-    uint8_t animation_get_active_animation(uint8_t stripe);
-    void animation_set_active_animation(uint8_t stripe, uint8_t animation);
+    uint8_t run_next_animation(uint8_t strand);
+    uint8_t run_previous_animation(uint8_t strand);
 
-    uint8_t animation_set_next_animation_active(uint8_t stripe);
-    uint8_t animation_set_previous_animation_active(uint8_t stripe);
+    void set_strand_fps(uint8_t strand, uint8_t fps);
+    uint8_t get_strand_fps(uint8_t strand);
 
-    uint8_t animation_get_current_fps(uint8_t stripe);
-    void animation_set_current_fps(uint8_t stripe, uint8_t fps);
+    void set_strand_color(uint8_t strand, uint8_t cnr, uint8_t hsv[3]);
+    void get_strand_color(uint8_t strand, uint8_t cnr, uint8_t hsv[3]);
 
-    void animation_set_current_color(uint8_t stripe, uint8_t cnr, uint8_t hsv[3]);
-    void animation_get_current_color(uint8_t stripe, uint8_t cnr, uint8_t hsv[3]);
+    void set_strand_sensor_index(uint8_t strand, uint8_t sensor_id, uint8_t sensor);
+    uint8_t get_strand_sensor_index(uint8_t strand, uint8_t sensor_id);
 
-    void animation_set_current_sensor_index(uint8_t stripe, uint8_t sensor, uint8_t sensor_index);
-    uint8_t animation_get_current_sensor_index(uint8_t stripe, uint8_t sensor);
+    void set_strand_autoplay(uint8_t strand, bool autoplay);
+    bool get_strand_autoplay(uint8_t strand);
 
-    void animation_set_autoplay(uint8_t stripe, bool autoplay);
-    bool animation_get_autoplay(uint8_t stripe);
+    void set_strand_autoplay_delay_time(uint8_t strand, uint16_t autoplay_delay_secs);
+    uint16_t get_strand_autoplay_delay_time(uint8_t strand);
 
-    uint16_t animation_get_autoplay_delay_time(uint8_t stripe);
-    void animation_set_autoplay_delay_time(uint8_t stripe, uint16_t autoplay_delay_secs);
+    void set_animation_fps(uint8_t strand, uint8_t animation, uint8_t fps);
+    uint8_t get_animation_fps(uint8_t strand, uint8_t animation);
 
-    void animation_set_fps(uint8_t stripe, uint8_t animation, uint8_t fps);
-    uint8_t animation_get_fps(uint8_t stripe, uint8_t animation);
+    void set_animation_sensor_index(uint8_t strand, uint8_t animation, uint8_t sensor_id, uint8_t sensor);
+    uint8_t get_animation_sensor_index(uint8_t strand, uint8_t animation, uint8_t sensor_id);
 
-    void animation_set_sensor_index(uint8_t stripe, uint8_t animation, uint8_t sensor, uint8_t sensor_index);
-    uint8_t animation_get_sensor_index(uint8_t stripe, uint8_t animation, uint8_t sensor);
+    void set_animation_color(uint8_t strand, uint8_t animation, uint8_t cnr, uint8_t hsv[3]);
+    void get_animation_color(uint8_t strand, uint8_t animation, uint8_t cnr, uint8_t hsv[3]);
 
-    void animation_set_color(uint8_t stripe, uint8_t animation, uint8_t cnr, uint8_t hsv[3]);
-    void animation_get_color(uint8_t stripe, uint8_t animation, uint8_t cnr, uint8_t hsv[3]);
+    void set_strand_option_0(uint8_t strand, uint8_t option);
+    uint8_t get_strand_option_0(uint8_t strand);
 
-    void animation_set_current_option_0(uint8_t stripe, uint8_t option);
-    uint8_t animation_get_current_option_0(uint8_t stripe);
+    void set_strand_option_1(uint8_t strand, uint8_t option);
+    uint8_t get_strand_option_1(uint8_t strand);
 
-    void animation_set_current_option_1(uint8_t stripe, uint8_t option);
-    uint8_t animation_get_current_option_1(uint8_t stripe);
+    void set_animation_option(uint8_t strand, uint8_t animation, uint8_t option_id, uint8_t option);
+    uint8_t get_animation_option(uint8_t strand, uint8_t animation, uint8_t option_id);
 
-    void animation_set_option(uint8_t stripe, uint8_t animation, uint8_t option_id, uint8_t option);
-    uint8_t animation_get_option(uint8_t stripe, uint8_t animation, uint8_t option_id);
+    void set_strand_autorun(uint8_t strand, bool on);
+    bool get_strand_autorun(uint8_t strand);
 
-    void animation_set_autoswitch_sensor_animation(uint8_t stripe, bool on);
-    bool animation_is_autoswitch_to_sensor_animation(uint8_t stripe);
+    void set_strand_autorun_sensor_delta(uint8_t strand, int16_t delta);
+    int16_t get_strand_autorun_sensor_delta(uint8_t strand);
 
-    void animation_set_global_brightness(uint8_t brightness);
-    uint8_t animation_get_global_brightness(void);
+    bool was_strand_autostarted(uint8_t strand);
+    uint16_t get_strand_sensor_delta(uint8_t strand);
 
-    void animation_led_stripe_reset_stripe(uint8_t stripe);
+    void set_strands_global_brightness(uint8_t brightness);
+    uint8_t get_strands_global_brightness(void);
+
+    void ani_led_strand_reset_strand(uint8_t strand);
 
 #else
 #define animation_init()                                                                                                                             \

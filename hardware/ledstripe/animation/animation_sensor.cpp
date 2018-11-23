@@ -5,15 +5,14 @@
 #include "../ledstripe_debug.h"
 
 #define PMAX (256 - (256 / 16))
-//#define PMAX 255
 #define TSTEPS ((PMAX + 1) / (TMAX - TREF))
 #define TMAX_SIMULATE 38
 
 namespace fastled
 {
 
-AnimationSensor::AnimationSensor(CRGB *leds, uint16_t led_count, animation_configuration_t *animation_info)
-    : LedStripeAnimation(leds, led_count, animation_info)
+AnimationSensor::AnimationSensor(CRGB *leds, uint16_t led_count, animation_configuration_t *animation_config)
+    : LedStripeAnimation(leds, led_count, animation_config)
 {
     simulated_sensor = TREF;
 }
@@ -35,6 +34,8 @@ void AnimationSensor::initialize()
 
     simulated_sensor = TREF;
     simulate = false;
+
+    force_update = false;
 
     setOption(3);
     _movingPalette = CRGBPalette16(CRGB::DarkSlateBlue, CRGB::DarkSlateBlue);
@@ -149,8 +150,6 @@ void AnimationSensor::setOption(uint8_t option)
 {
     _option = option;
 
-    LV_("op0 %u", option);
-
     switch (option)
     {
     case 0:
@@ -199,8 +198,6 @@ void AnimationSensor::setOption(uint8_t option)
         LV_("op0 oor %u", option);
         break;
     }
-
-    old_delta = 0;
 }
 
 void AnimationSensor::updateSimulation()
@@ -231,7 +228,7 @@ void AnimationSensor::updateSimulation()
     }
 }
 
-void AnimationSensor::updateSensors()
+void AnimationSensor::updateSensorValues()
 {
     if (simulate)
     {
@@ -250,7 +247,7 @@ void AnimationSensor::updateSensors()
     delta = sns_current_value - sns_ref_value;
 }
 
-bool AnimationSensor::sensorsChanged()
+bool AnimationSensor::sensorsDeltaChanged()
 {
     return (old_delta != delta);
 }
@@ -279,7 +276,6 @@ void AnimationSensor::updatePalette()
 void AnimationSensor::setOption2(uint8_t option)
 {
     _option2 = option;
-    old_delta = 0;
     simulate = _option2 & 0x4;
 
     LV_("op1 %u", option);
@@ -288,6 +284,7 @@ void AnimationSensor::setOption2(uint8_t option)
 
 void AnimationSensor::update()
 {
+    force_update = true;
 }
 
 void AnimationSensor::addGlitter(fract8 chanceOfGlitter)
@@ -336,12 +333,20 @@ void AnimationSensor::animate()
     }
 }
 
+bool AnimationSensor::forcedUpdate()
+{
+    bool forced = force_update;
+    if (force_update)
+        force_update = false;
+    return forced;
+}
+
 bool AnimationSensor::loop()
 {
     updateSimulation();
-    updateSensors();
+    updateSensorValues();
 
-    if (sensorsChanged())
+    if (sensorsDeltaChanged() || forcedUpdate())
     {
         updatePalette();
         animate();

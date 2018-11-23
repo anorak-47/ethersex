@@ -8,7 +8,7 @@ namespace fastled
 class AnimationSensor : public LedStripeAnimation
 {
 public:
-    static LedStripeAnimation *create(CRGB *leds, uint16_t led_count, animation_configuration_t *animation_info);
+    static LedStripeAnimation *create(CRGB *leds, uint16_t led_count, animation_configuration_t *animation_config);
     virtual ~AnimationSensor();
 
     virtual void initialize() override;
@@ -21,11 +21,12 @@ protected:
     AnimationSensor(CRGB *leds, uint16_t led_count, animation_configuration_t *animation_info);
 
     void animate();
-    void updateSensors();
+    void updateSensorValues();
     void updateSimulation();
-    bool sensorsChanged();
+    bool sensorsDeltaChanged();
     void updatePalette();
     bool animateByOptionValue();
+    bool forcedUpdate();
 
     void addGlitter(fract8 chanceOfGlitter);
     void addGlitterAt(uint16_t led, fract8 chanceOfGlitter);
@@ -44,6 +45,8 @@ protected:
 
     int8_t delta = 0;
     int8_t old_delta = 0;
+
+    bool force_update = false;
 
     bool simulate = false;
     uint8_t simulated_sensor;
