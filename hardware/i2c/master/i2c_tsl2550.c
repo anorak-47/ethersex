@@ -131,7 +131,7 @@ uint16_t i2c_tsl2550_set_operating_mode(const uint8_t mode) {
   data.operating_mode = mode;
   ret = mode;
 
-  I2CDEBUG("I2C: tsl2550: op mode: %d\n", mode);
+  I2CDEBUG("tsl2550: op mode: %d\n", mode);
 
 end:
   i2c_master_stop();
@@ -156,7 +156,7 @@ uint16_t i2c_tsl2550_set_power_state(const uint8_t state) {
   data.power_state = state;
   ret = state;
 
-  I2CDEBUG("I2C: tsl2550: pwr state: %d\n", state);
+  I2CDEBUG("tsl2550: pwr state: %d\n", state);
 
 end:
   i2c_master_stop();
@@ -177,7 +177,7 @@ uint8_t tsl2550_read_adc(const uint8_t adc) {
   if (!i2c_master_select(I2C_SLA_TSL2550, TW_READ))
     goto end;
   if (i2c_master_transmit() != TW_MT_DATA_ACK) {
-    I2CDEBUG("I2C: read_lux: TW_MT_DATA_ACK!\n", val);
+    I2CDEBUG("tsl2550: read_lux: TW_MT_DATA_ACK!\n", val);
     goto end;
   }
 
@@ -186,7 +186,7 @@ uint8_t tsl2550_read_adc(const uint8_t adc) {
 end:
   i2c_master_stop();
 
-  I2CDEBUG("I2C: read_lux: val: 0x%X\n", val);
+  I2CDEBUG("tsl2550: read_lux: val: 0x%X\n", val);
 
   return val;
 }
@@ -201,7 +201,7 @@ uint8_t tsl2550_read_adc_try(const uint8_t adc) {
     if ((ret & 0x80) == 0x80)
       break;
 
-    I2CDEBUG("I2C: loop %u\n", loop);
+    I2CDEBUG("tsl2550: loop %u\n", loop);
 
     _delay_ms(5);
   }
@@ -231,13 +231,13 @@ uint16_t i2c_tsl2550_get_lux_level(void) {
 
   ret = tsl2550_compute_lux(adc0, adc1);
 
-  I2CDEBUG("I2C: i2c_tsl2550_read_lux: mode: %d, lux: %d\n",
+  I2CDEBUG("tsl2550: get_lux_level: mode: %d, lux: %d\n",
            data.operating_mode, ret);
 
   if (data.operating_mode == 1)
     ret *= 5;
 
-  I2CDEBUG("I2C: i2c_tsl2550_read_lux: %d\n", ret);
+  I2CDEBUG("tsl2550: get_lux_level: %d\n", ret);
 
   return ret;
 }
