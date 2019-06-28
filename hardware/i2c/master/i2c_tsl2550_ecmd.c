@@ -60,14 +60,8 @@ int16_t parse_cmd_i2c_tsl2550_set_operating_mode(char *cmd, char *output,
 #endif
 }
 
-<<<<<<< HEAD
-int16_t
-parse_cmd_i2c_tsl2550_show_lux_level(char *cmd, char *output, uint16_t len)
-{
-=======
 int16_t parse_cmd_i2c_tsl2550_show_lux_level(char *cmd, char *output,
                                              uint16_t len) {
->>>>>>> origin/tsl2550
   uint16_t ret = i2c_tsl2550_get_lux_level();
   if (ret == 0xffff)
     return ECMD_FINAL(snprintf_P(output, len, PSTR("no sensor detected")));

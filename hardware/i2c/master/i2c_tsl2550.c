@@ -40,23 +40,14 @@
 #define TSL2550_POWER_UP 0x03
 #define TSL2550_STANDARD_RANGE 0x18
 #define TSL2550_EXTENDED_RANGE 0x1d
-<<<<<<< HEAD
-#define TSL2550_READ_ADC0 0x43
-#define TSL2550_READ_ADC1 0x83
-=======
 #define TSL2550_READ_c0 0x43
 #define TSL2550_READ_c1 0x83
->>>>>>> origin/tsl2550
 
 /*
  * Structs
  */
 
-<<<<<<< HEAD
-struct tsl2550_data {
-=======
 struct tsl2550_state_s {
->>>>>>> origin/tsl2550
   unsigned int power_state : 1;
   unsigned int operating_mode : 1;
 };
@@ -65,11 +56,7 @@ struct tsl2550_state_s {
  * Global tsl2550_state
  */
 
-<<<<<<< HEAD
-static struct tsl2550_data data;
-=======
 static struct tsl2550_state_s tsl2550_state;
->>>>>>> origin/tsl2550
 
 /*
  * LUX calculation
@@ -79,16 +66,8 @@ static struct tsl2550_state_s tsl2550_state;
  * Simplified TSL2550 Lux Calculation for Embedded and Micro Controller
  */
 
-<<<<<<< HEAD
-// INTELLIGENT OPTO SENSOR DESIGNER’S NOTEBOOK
-// Simplified TSL2550 Lux Calculation for Embedded and Micro Controller
-
-// Lookup table for channel ratio (i.e. channel1 / channel0)
-unsigned char ratioLut[129] = {
-=======
 // Lookup table for channel ratio (i.e. channel1 / channel0)
 const unsigned char ratioLut[129] PROGMEM = {
->>>>>>> origin/tsl2550
     100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 99,
     99,  99,  99,  99,  99,  99,  99,  99,  99,  99,  99,  99,  98,  98,  98,
     98,  98,  98,  98,  97,  97,  97,  97,  97,  96,  96,  96,  96,  95,  95,
@@ -100,11 +79,7 @@ const unsigned char ratioLut[129] PROGMEM = {
     31,  31,  31,  31,  30,  30,  30,  30,  30};
 
 // Lookup table to convert channel values to counts unsigned
-<<<<<<< HEAD
-short countLut[128] = {
-=======
 const short countLut[128] PROGMEM = {
->>>>>>> origin/tsl2550
     0,    1,    2,    3,    4,    5,    6,    7,    8,    9,    10,   11,
     12,   13,   14,   15,   16,   18,   20,   22,   24,   26,   28,   30,
     32,   34,   36,   38,   40,   42,   44,   46,   49,   53,   57,   61,
@@ -120,11 +95,6 @@ const short countLut[128] PROGMEM = {
 const short kMaxLux = 1846; // standard mode max
 
 uint16_t tsl2550_compute_lux(const uint8_t channel0, const uint8_t channel1) {
-<<<<<<< HEAD
-  //    lookup count from channel value
-  unsigned short count0 = countLut[channel0];
-  unsigned short count1 = countLut[channel1];
-=======
 
   I2CDEBUG("tsl2550: clux: c0: %u, c1: %u\n", channel0, channel1);
 
@@ -133,7 +103,6 @@ uint16_t tsl2550_compute_lux(const uint8_t channel0, const uint8_t channel1) {
   unsigned short count1 = pgm_read_word(&countLut[channel1 & 0x7f]);
 
   I2CDEBUG("tsl2550: clux: count0: %u, count1: %u\n", count0, count1);
->>>>>>> origin/tsl2550
 
   // calculate ratio
   // Note: the "128" is a scaling factor
@@ -142,13 +111,6 @@ uint16_t tsl2550_compute_lux(const uint8_t channel0, const uint8_t channel1) {
   // avoid division by zero
   // and count1 cannot be greater than count0
   if ((count0) && (count1 <= count0))
-<<<<<<< HEAD
-    ratio = (count1 * 128 / count0);
-
-  // calculate lux
-  // Note: the "256" is a scaling factor
-  unsigned long lux = ((count0 - count1) * ratioLut[ratio]) / 256;
-=======
     ratio = ((count1 * 128L) / count0);
 
   I2CDEBUG("tsl2550: clux: ratio: %u\n", ratio);
@@ -160,7 +122,6 @@ uint16_t tsl2550_compute_lux(const uint8_t channel0, const uint8_t channel1) {
       256L;
 
   I2CDEBUG("tsl2550: clux: lux: %u\n", lux);
->>>>>>> origin/tsl2550
 
   // range check lux
   if (lux > kMaxLux)
@@ -172,132 +133,6 @@ uint16_t tsl2550_compute_lux(const uint8_t channel0, const uint8_t channel1) {
 uint16_t i2c_tsl2550_set_operating_mode(const uint8_t mode) {
   uint16_t ret = 0xffff;
 
-<<<<<<< HEAD
-  if (!i2c_master_select(I2C_SLA_TSL2550, TW_WRITE))
-    goto end;
-
-  TWDR = (mode == 0 ? TSL2550_STANDARD_RANGE : TSL2550_EXTENDED_RANGE);
-  if (i2c_master_transmit_with_ack() != TW_MT_DATA_ACK)
-    goto end;
-
-  data.operating_mode = mode;
-  ret = mode;
-
-  I2CDEBUG("tsl2550: op mode: %d\n", mode);
-
-end:
-  i2c_master_stop();
-  return ret;
-}
-
-uint16_t i2c_tsl2550_set_power_state(const uint8_t state) {
-  uint16_t ret = 0xffff;
-
-  if (!i2c_master_select(I2C_SLA_TSL2550, TW_WRITE))
-    goto end;
-
-  TWDR = (state == 0 ? TSL2550_POWER_DOWN : TSL2550_POWER_UP);
-  if (i2c_master_transmit_with_ack() != TW_MT_DATA_ACK)
-    goto end;
-
-  if (state > 0) {
-    /* On power up we should reset operating mode too... */
-    i2c_tsl2550_set_operating_mode(data.operating_mode);
-  }
-
-  data.power_state = state;
-  ret = state;
-
-  I2CDEBUG("tsl2550: pwr state: %d\n", state);
-
-end:
-  i2c_master_stop();
-  return ret;
-}
-
-uint8_t tsl2550_read_adc(const uint8_t adc) {
-  uint8_t val = 0;
-
-  if (!i2c_master_select(I2C_SLA_TSL2550, TW_WRITE))
-    goto end;
-  TWDR = (adc == 0 ? TSL2550_READ_ADC0 : TSL2550_READ_ADC1);
-  if (i2c_master_transmit_with_ack() != TW_MT_DATA_ACK)
-    goto end;
-
-  i2c_master_stop();
-
-  if (!i2c_master_select(I2C_SLA_TSL2550, TW_READ))
-    goto end;
-  if (i2c_master_transmit() != TW_MT_DATA_ACK) {
-    I2CDEBUG("tsl2550: read_lux: TW_MT_DATA_ACK!\n", val);
-    goto end;
-  }
-
-  val = TWDR;
-
-end:
-  i2c_master_stop();
-
-  I2CDEBUG("tsl2550: read_lux: val: 0x%X\n", val);
-
-  return val;
-}
-
-uint8_t tsl2550_read_adc_try(const uint8_t adc) {
-  uint8_t ret = 0xff;
-
-  for (uint8_t loop = 0; loop < 5; ++loop) {
-
-    ret = tsl2550_read_adc(adc);
-
-    if ((ret & 0x80) == 0x80)
-      break;
-
-    I2CDEBUG("tsl2550: loop %u\n", loop);
-
-    _delay_ms(5);
-  }
-
-  return ret;
-}
-
-uint8_t tsl2550_value_is_valid(uint8_t value) {
-  return (value & 0x80) == 0x80;
-}
-
-uint16_t i2c_tsl2550_get_lux_level(void) {
-  uint8_t adc0;
-  uint8_t adc1;
-  uint16_t ret = 0xffff;
-
-  /* read adc channel 0 */
-  adc0 = tsl2550_read_adc_try(0);
-
-  _delay_ms(2);
-
-  /* read adc channel 1 */
-  adc1 = tsl2550_read_adc_try(1);
-
-  if (!tsl2550_value_is_valid(adc0) && !tsl2550_value_is_valid(adc1))
-    return 0xffff;
-
-  ret = tsl2550_compute_lux(adc0, adc1);
-
-  I2CDEBUG("tsl2550: get_lux_level: mode: %d, lux: %d\n",
-           data.operating_mode, ret);
-
-  if (data.operating_mode == 1)
-    ret *= 5;
-
-  I2CDEBUG("tsl2550: get_lux_level: %d\n", ret);
-
-  return ret;
-}
-
-void i2c_tsl2550_init(void) {
-  data.power_state = 0;
-  data.operating_mode = 0;
-=======
   I2CDEBUG("tsl2550: set mode: %u\n", mode);
 
   if (!i2c_master_select(I2C_SLA_TSL2550, TW_WRITE))
@@ -450,7 +285,6 @@ void tsl2550_get_state(uint8_t *power, uint8_t *mode) {
 void i2c_tsl2550_init(void) {
   tsl2550_state.power_state = 0;
   tsl2550_state.operating_mode = 0;
->>>>>>> origin/tsl2550
 }
 
 /*
