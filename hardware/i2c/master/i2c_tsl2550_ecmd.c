@@ -32,57 +32,72 @@
 #include "hardware/i2c/master/i2c_tsl2550.h"
 #include "protocols/ecmd/ecmd-base.h"
 
-int16_t
-parse_cmd_i2c_tsl2550_set_power_state(char *cmd, char *output, uint16_t len)
-{
+int16_t parse_cmd_i2c_tsl2550_set_power_state(char *cmd, char *output,
+                                              uint16_t len) {
   uint8_t state;
   sscanf_P(cmd, PSTR("%hhu"), &state);
   uint16_t ret = i2c_tsl2550_set_power_state(state);
   if (ret == 0xffff)
     return ECMD_FINAL(snprintf_P(output, len, PSTR("no sensor detected")));
 #ifdef ECMD_MIRROR_REQUEST
-  return ECMD_FINAL(snprintf_P(output, len, PSTR("tsl2550 power %d"), state));
+  return ECMD_FINAL(snprintf_P(output, len, PSTR("tsl2550 power %u"), state));
 #else
   return ECMD_FINAL(snprintf_P(output, len, PSTR("ok")));
 #endif
 }
 
-int16_t
-parse_cmd_i2c_tsl2550_set_operating_mode(char *cmd, char *output,
-                                         uint16_t len)
-{
+int16_t parse_cmd_i2c_tsl2550_set_operating_mode(char *cmd, char *output,
+                                                 uint16_t len) {
   uint8_t mode;
   sscanf_P(cmd, PSTR("%hhu"), &mode);
   uint16_t temp = i2c_tsl2550_set_operating_mode(mode);
   if (temp == 0xffff)
     return ECMD_FINAL(snprintf_P(output, len, PSTR("no sensor detected")));
 #ifdef ECMD_MIRROR_REQUEST
-  return ECMD_FINAL(snprintf_P(output, len, PSTR("tsl2550 mode %d"), mode));
+  return ECMD_FINAL(snprintf_P(output, len, PSTR("tsl2550 mode %u"), mode));
 #else
-  return
-    ECMD_FINAL(snprintf_P
-               (output, len, PSTR("%s"), (temp == 0 ? "std" : "ext")));
+  return ECMD_FINAL(snprintf_P(output, len, PSTR("ok")));
 #endif
 }
 
+<<<<<<< HEAD
 int16_t
 parse_cmd_i2c_tsl2550_show_lux_level(char *cmd, char *output, uint16_t len)
 {
+=======
+int16_t parse_cmd_i2c_tsl2550_show_lux_level(char *cmd, char *output,
+                                             uint16_t len) {
+>>>>>>> origin/tsl2550
   uint16_t ret = i2c_tsl2550_get_lux_level();
   if (ret == 0xffff)
     return ECMD_FINAL(snprintf_P(output, len, PSTR("no sensor detected")));
+  if (ret == 0xdead)
+    return ECMD_FINAL(snprintf_P(output, len, PSTR("power is off")));
 #ifdef ECMD_MIRROR_REQUEST
-  return ECMD_FINAL(snprintf_P(output, len, PSTR("tsl2550 lux %d"), ret));
+  return ECMD_FINAL(snprintf_P(output, len, PSTR("tsl2550 lux %u"), ret));
 #else
-  return ECMD_FINAL(snprintf_P(output, len, PSTR("%d"), ret));
+  return ECMD_FINAL(snprintf_P(output, len, PSTR("%u"), ret));
+#endif
+}
+
+int16_t parse_cmd_i2c_tsl2550_get_state(char *cmd, char *output,
+                                        uint16_t len) {
+  uint8_t power;
+  uint8_t mode;
+  tsl2550_get_state(&power, &mode);
+#ifdef ECMD_MIRROR_REQUEST
+  return ECMD_FINAL(snprintf_P(
+      output, len, PSTR("tsl2550 state power %u mode %u"), power, mode));
+#else
+  return ECMD_FINAL(snprintf_P(output, len, PSTR("power %u mode %u"), ret));
 #endif
 }
 
 /*
 -- Ethersex META --
-
   block([[I2C]] (TWI))
   ecmd_feature(i2c_tsl2550_show_lux_level, "tsl2550 lux",, Show light level by reading adc registers and computing level)
   ecmd_feature(i2c_tsl2550_set_power_state, "tsl2550 power", VALUE, Set the TSL2550s power state (0: down, 1:up))
   ecmd_feature(i2c_tsl2550_set_operating_mode, "tsl2550 mode", VALUE, Set the TSL2550s operating mode (0: standard range, 1: extended range))
+  ecmd_feature(i2c_tsl2550_get_state, "tsl2550 state",, Get TSL2550s power and operating mode)
 */
