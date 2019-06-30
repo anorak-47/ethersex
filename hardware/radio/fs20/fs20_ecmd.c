@@ -105,62 +105,60 @@ int16_t parse_cmd_fs20_receive(char *cmd, char *output, uint16_t len)
     uint8_t outlen = 0;
 
 #ifdef DEBUG_ECMD_FS20
-    debug_printf("queue: %u, len: %u\n", fs20_global.fs20.len, len);
+    debug_printf("queue: %u, len: %u\n", fs20_queue.len, len);
 #endif
 
-    while (l < fs20_global.fs20.len && (uint8_t)(outlen+11) < len) 
+    while (l < fs20_queue.len && (uint8_t)(outlen+11) < len)
     {
-        if ( fs20_global.fs20.queue[l].ext )
+        if (fs20_queue.queue[l].isfs20)
         {
-            sprintf_P(s, PSTR("%02x%02x%02x%02x%02x\n"),
-                      fs20_global.fs20.queue[l].data.edg.hc1,
-                      fs20_global.fs20.queue[l].data.edg.hc2,
-                      fs20_global.fs20.queue[l].data.edg.addr,
-                      fs20_global.fs20.queue[l].data.edg.cmd,
-                      fs20_global.fs20.queue[l].data.edg.cmd2);
+            if ( fs20_queue.queue[l].fs20.ext )
+            {
+                sprintf_P(s, PSTR("%02x%02x%02x%02x%02x\n"),
+                          fs20_queue.queue[l].fs20.data.edg.hc1,
+                          fs20_queue.queue[l].fs20.data.edg.hc2,
+                          fs20_queue.queue[l].fs20.data.edg.addr,
+                          fs20_queue.queue[l].fs20.data.edg.cmd,
+                          fs20_queue.queue[l].fs20.data.edg.cmd2);
 
-            s += 11;
-            outlen += 11;
+                s += 11;
+                outlen += 11;
 
 #ifdef DEBUG_ECMD_FS20
-            debug_printf("outlen: %d, pos %u: %02x%02x%02x%02x%02x\n", outlen, l,
-                         fs20_global.fs20.queue[l].data.edg.hc1,
-                         fs20_global.fs20.queue[l].data.edg.hc2,
-                         fs20_global.fs20.queue[l].data.edg.addr,
-                         fs20_global.fs20.queue[l].data.edg.cmd,
-                         fs20_global.fs20.queue[l].data.edg.cmd2);
+                debug_printf("outlen: %d, pos %u: %02x%02x%02x%02x%02x\n", outlen, l,
+                             fs20_queue.queue[l].fs20.data.edg.hc1,
+                             fs20_queue.queue[l].fs20.data.edg.hc2,
+                             fs20_queue.queue[l].fs20.data.edg.addr,
+                             fs20_queue.queue[l].fs20.data.edg.cmd,
+                             fs20_queue.queue[l].fs20.data.edg.cmd2);
 #endif
-        }
-        else
-        {
-            sprintf_P(s, PSTR("%02x%02x%02x%02x\n"),
-                      fs20_global.fs20.queue[l].data.dg.hc1,
-                      fs20_global.fs20.queue[l].data.dg.hc2,
-                      fs20_global.fs20.queue[l].data.dg.addr,
-                      fs20_global.fs20.queue[l].data.dg.cmd);
+            }
+            else
+            {
+                sprintf_P(s, PSTR("%02x%02x%02x%02x\n"),
+                          fs20_queue.queue[l].fs20.data.dg.hc1,
+                          fs20_queue.queue[l].fs20.data.dg.hc2,
+                          fs20_queue.queue[l].fs20.data.dg.addr,
+                          fs20_queue.queue[l].fs20.data.dg.cmd);
 
-            s += 9;
-            outlen += 9;
+                s += 9;
+                outlen += 9;
 
-            #ifdef DEBUG_ECMD_FS20
-            debug_printf("outlen: %d, pos %u: %02x%02x%02x%02x\n", outlen, l,
-                         fs20_global.fs20.queue[l].data.dg.hc1,
-                         fs20_global.fs20.queue[l].data.dg.hc2,
-                         fs20_global.fs20.queue[l].data.dg.addr,
-                         fs20_global.fs20.queue[l].data.dg.cmd);
+#ifdef DEBUG_ECMD_FS20
+                debug_printf("outlen: %d, pos %u: %02x%02x%02x%02x\n", outlen, l,
+                             fs20_queue.queue[l].fs20.data.dg.hc1,
+                             fs20_queue.queue[l].fs20.data.dg.hc2,
+                             fs20_queue.queue[l].fs20.data.dg.addr,
+                             fs20_queue.queue[l].fs20.data.dg.cmd);
 #endif
+            }
         }
     
         l++;
     }
 
-#ifdef DEBUG_ECMD_FS20
-        *s = '\0';
-        debug_printf("output is \"%s\"\n", output);
-#endif
-
     /* clear queue */
-    fs20_global.fs20.len = 0;
+    fs20_queue.len = 0;
 
     return ECMD_FINAL(outlen);
 }
@@ -171,23 +169,23 @@ int16_t parse_cmd_fs20_ws300(char *cmd, char *output, uint16_t len)
 #ifdef ECMD_MIRROR_REQUEST
     return ECMD_FINAL(snprintf_P(output, len,
                                  PSTR("fs20 ws300 %d.%u %u %u.%u %u %u"),
-                                 fs20_global.ws300.temp,
-                                 fs20_global.ws300.temp_frac,
-                                 fs20_global.ws300.hygro,
-                                 fs20_global.ws300.wind,
-                                 fs20_global.ws300.wind_frac,
-                                 fs20_global.ws300.rain,
-                                 fs20_global.ws300.rain_value));
+                                 fs20_global.ws300.data.temp,
+                                 fs20_global.ws300.data.temp_frac,
+                                 fs20_global.ws300.data.hygro,
+                                 fs20_global.ws300.data.wind,
+                                 fs20_global.ws300.data.wind_frac,
+                                 fs20_global.ws300.data.rain,
+                                 fs20_global.ws300.data.rain_value));
 #else
     return ECMD_FINAL(snprintf_P(output, len,
                                  PSTR("deg: %d.%u C, hyg: %u%%, wind: %u.%u km/h, rain: %u, counter: %u"),
-                                 fs20_global.ws300.temp,
-                                 fs20_global.ws300.temp_frac,
-                                 fs20_global.ws300.hygro,
-                                 fs20_global.ws300.wind,
-                                 fs20_global.ws300.wind_frac,
-                                 fs20_global.ws300.rain,
-                                 fs20_global.ws300.rain_value));
+                                 fs20_global.ws300.data.temp,
+                                 fs20_global.ws300.data.temp_frac,
+                                 fs20_global.ws300.data.hygro,
+                                 fs20_global.ws300.data.wind,
+                                 fs20_global.ws300.data.wind_frac,
+                                 fs20_global.ws300.data.rain,
+                                 fs20_global.ws300.data.rain_value));
 #endif
 }
 #endif /* FS20_RECEIVE_WS300_SUPPORT */

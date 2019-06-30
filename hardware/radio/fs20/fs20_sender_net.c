@@ -21,7 +21,7 @@
 /*
  * fs20_sender_net.c
  * 
- * Based heavily on watchasync.c
+ * Based heavily on watchasync.c based heavily on httplog.c based heavily on twitter.c
  * Purpose:
  * Send received FS20/FHT command to tcp port
  */
@@ -49,7 +49,7 @@ static uint8_t fs20_qpos = FS20_QUEUE_NOITEM;
 
 static void fs20_net_main(void)  // Network-routine called by networkstack 
 {
-    if (uip_aborted() || uip_timedout()) // Connection aborted or timedout
+    if (uip_aborted() || uip_timedout() || uip_closed()) // Connection aborted or timedout
     {
         // if connectionstate is new, we have to resend the packet, otherwise just ignore the event
         if (uip_conn->appstate.fs20.state == FS20_CONNSTATE_NEW)
@@ -59,21 +59,11 @@ static void fs20_net_main(void)  // Network-routine called by networkstack
             FS20S_DEBUG ("connection aborted\n");
             return;
         }
-    }
-
-    if (uip_closed()) // Closed connection does not expect any respond from us, resend if connnectionstate is new
-    {
-        if (uip_conn->appstate.fs20.state == FS20_CONNSTATE_NEW)
+        else if (uip_closed()) 
         {
-            fs20_sendstate = 2; // Ignore aborted, if already closed
-            uip_conn->appstate.fs20.state = FS20_CONNSTATE_OLD;
-            FS20S_DEBUG ("new connection closed\n");
-        } 
-        else 
-        {
+            // Closed connection does not expect any respond from us
             FS20S_DEBUG ("connection closed\n");
         }
-        return;
     }
 
     if (uip_connected() || uip_rexmit()) 
@@ -82,24 +72,41 @@ static void fs20_net_main(void)  // Network-routine called by networkstack
         FS20S_DEBUG ("new connection or rexmit, sending message\n");
         char *p = uip_appdata;  // pointer set to uip_appdata, used to store string
 
-        p += sprintf_P(p, PSTR("fs20 "));
+        if (fs20_queue.queue[fs20_qpos].isfs20)
+        {
+            if (fs20_queue.queue[fs20_qpos].fs20.fht)
+            {
+                p += sprintf_P(p, PSTR("fht "));
+            }
+            else
+            {
+                p += sprintf_P(p, PSTR("fs20 "));
+            }
 
-		if (fs20_global.fs20.queue[fs20_qpos].ext)
-		{
-			p += sprintf_P(p, PSTR("%02x%02x%02x%02x%02x"), fs20_global.fs20.queue[fs20_qpos].data.edg.hc1,
-					fs20_global.fs20.queue[fs20_qpos].data.edg.hc2, fs20_global.fs20.queue[fs20_qpos].data.edg.addr,
-					fs20_global.fs20.queue[fs20_qpos].data.edg.cmd, fs20_global.fs20.queue[fs20_qpos].data.edg.cmd2);
-		}
-		else
-		{
-			p += sprintf_P(p, PSTR("%02x%02x%02x%02x"), fs20_global.fs20.queue[fs20_qpos].data.dg.hc1,
-					fs20_global.fs20.queue[fs20_qpos].data.dg.hc2, fs20_global.fs20.queue[fs20_qpos].data.dg.addr,
-					fs20_global.fs20.queue[fs20_qpos].data.dg.cmd);
-		}
-
-		fs20_global.fs20.queue[fs20_qpos].send = 0;
+            if (fs20_queue.queue[fs20_qpos].fs20.ext)
+            {
+                p += sprintf_P(p, PSTR("%02x%02x%02x%02x%02x"), fs20_queue.queue[fs20_qpos].fs20.data.edg.hc1,
+                               fs20_queue.queue[fs20_qpos].fs20.data.edg.hc2, fs20_queue.queue[fs20_qpos].fs20.data.edg.addr,
+                               fs20_queue.queue[fs20_qpos].fs20.data.edg.cmd, fs20_queue.queue[fs20_qpos].fs20.data.edg.cmd2);
+            }
+            else
+            {
+                p += sprintf_P(p, PSTR("%02x%02x%02x%02x"), fs20_queue.queue[fs20_qpos].fs20.data.dg.hc1,
+                               fs20_queue.queue[fs20_qpos].fs20.data.dg.hc2, fs20_queue.queue[fs20_qpos].fs20.data.dg.addr,
+                               fs20_queue.queue[fs20_qpos].fs20.data.dg.cmd);
+            }
+        }
+        else
+        {
+            p += sprintf_P(p, PSTR("ks300 %d.%u %u %u.%u %u %u"), fs20_queue.queue[fs20_qpos].ws300.temp,
+                           fs20_queue.queue[fs20_qpos].ws300.temp_frac, fs20_queue.queue[fs20_qpos].ws300.hygro, fs20_queue.queue[fs20_qpos].ws300.wind,
+                           fs20_queue.queue[fs20_qpos].ws300.wind_frac, fs20_queue.queue[fs20_qpos].ws300.rain, fs20_queue.queue[fs20_qpos].ws300.rain_value);
+        }
 
         uip_udp_send(p - (char *)uip_appdata);
+
+        fs20_queue.queue[fs20_qpos].send = 0;
+
         FS20S_DEBUG ("send %d bytes\n", p - (char *)uip_appdata);
         FS20S_DEBUG ("send %s\n", uip_appdata);
     }
@@ -124,9 +131,9 @@ static void fs20_net_main(void)  // Network-routine called by networkstack
 static void fs20_dns_query_cb(char *name, uip_ipaddr_t *ipaddr)  // Callback for DNS query
 {
 #ifdef DEBUG_FS20_SENDER
-	char buf[50];
-	print_ipaddr(ipaddr, buf, 50);
-    FS20S_DEBUG ("got dns response, connecting %s:%d\n", buf, CONF_FS20_PORT);
+    char buf[50];
+    print_ipaddr(ipaddr, buf, 50);
+    FS20S_DEBUG ("connecting %s:%d\n", buf, CONF_FS20_PORT);
 #endif
 
     uip_conn_t *conn = uip_connect(ipaddr, HTONS(CONF_FS20_PORT), fs20_net_main);  // create new connection with ipaddr found
@@ -143,31 +150,33 @@ static void fs20_dns_query_cb(char *name, uip_ipaddr_t *ipaddr)  // Callback for
 
 void fs20_sendmessage(void) // Send fs20/fht command from queue to tcp port
 {
-	fs20_sendstate = 1; // set new state in progress
+    fs20_sendstate = 1; // set new state in progress
 
-	uip_ipaddr_t ipaddr;
-	FS20S_DEBUG ("connecting %s\n", CONF_FS20_SERVICE);
+    FS20S_DEBUG ("connecting %s\n", CONF_FS20_SERVER);
 
-	if (parse_ip(CONF_FS20_SERVICE, &ipaddr) == -1)
-	{
-		uip_ipaddr_t *ripaddr;
-		// Try to find IPAddress
-		if (!(ripaddr = resolv_lookup(CONF_FS20_SERVICE)))
-		{
-			resolv_query(CONF_FS20_SERVICE, fs20_dns_query_cb); // If not found: query DNS
-		}
-		else
-		{
-			fs20_dns_query_cb(NULL, ripaddr); // If found use IPAddress
-		}
-	}
-	else
-	{
-		FS20S_DEBUG ("ip %s\n", CONF_FS20_SERVICE);
-		fs20_dns_query_cb(NULL, &ipaddr);
-	}
+#ifdef DNS_SUPPORT
+    uip_ipaddr_t *ipaddr;
+    // Try to find IPAddress
+    if (!(ipaddr = resolv_lookup(CONF_FS20_SERVER)))
+    {
+        resolv_query(CONF_FS20_SERVER, fs20_dns_query_cb); // If not found: query DNS
+    }
+    else
+    {
+        fs20_dns_query_cb(NULL, ipaddr); // If found use IPAddress
+    }
+#else
+    uip_ipaddr_t ip;
+    set_FS20_SERVER_IP(&ip);
+    fs20_dns_query_cb(NULL, &ip);
+#endif
 
-	return;
+    return;
+}
+
+void fs20_sender_init(void)
+{
+
 }
 
 void fs20_sender_mainloop(void)  // Mainloop routine polls command queue
@@ -183,9 +192,9 @@ void fs20_sender_mainloop(void)  // Mainloop routine polls command queue
         {
             fs20_qpos = FS20_QUEUE_NOITEM;
             
-            for ( uint8_t i = 0; i < fs20_global.fs20.len; i++ ) 
+            for ( uint8_t i = 0; i < fs20_queue.len; i++ )
             {
-                if ( fs20_global.fs20.queue[i].send )
+                if ( fs20_queue.queue[i].send )
                 {
                     fs20_qpos = i;
                     break;
@@ -203,6 +212,7 @@ void fs20_sender_mainloop(void)  // Mainloop routine polls command queue
 /*
   -- Ethersex META --
   header(hardware/radio/fs20/fs20_sender_net.h)
+  init(fs20_sender_init)
   mainloop(fs20_sender_mainloop)
   state_header(hardware/radio/fs20/fs20_sender_state.h)
   state_tcp(`struct fs20_sender_connection_state_t fs20;')

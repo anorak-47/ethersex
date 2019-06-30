@@ -33,6 +33,7 @@
 #error "F_CPU undefined!"
 #endif
 
+
 /*
   FS20 and FHT on the air protokoll is described here
   http://fhz4linux.info/tiki-index.php?page=FS20+Protocol
@@ -59,6 +60,9 @@
 #define FS20_DELAY_ZERO (4 * (F_CPU / 10000) / 4) /* 400uS, for delay_loop_2 */
 #define FS20_DELAY_ONE  (6 * (F_CPU / 10000) / 4) /* 600uS, for delay_loop_2 */
 #define FS20_DELAY_CMD  ( F_CPU / 100 / 4) /* 10ms, for delay_loop_2 */
+
+
+#ifndef FS20_FAST_TIMER_0
 
 /* FS20 read routines use timer 2 */
 /* Determine best prescaler depending on F_CPU */
@@ -88,6 +92,18 @@
 #error F_CPU to large
 #endif
 
+
+#else // FS20_FAST_TIMER
+
+
+/* FS20 read definitions */
+/* FS20 read routines use timer 0 with prescaler 256 */
+
+#define FS20_PRESCALER 256
+
+#endif // FS20_FAST_TIMER
+
+
 #define FS20_US2T(x) (int)(F_CPU/1000000*(x)/FS20_PRESCALER)
 
 #define FS20_BETWEEN(x, a, b) ((x >= FS20_US2T(a)) && (x <= FS20_US2T(b)))
@@ -97,10 +113,11 @@
 #define FS20_PULSE_ZERO(x) FS20_BETWEEN((x), 300, 500)
 /* one is 600uS: accept any pulse between 500us and 700us */
 #define FS20_PULSE_ONE(x) FS20_BETWEEN((x), 500, 700)
-/* maximal difference between two pulses is 100uS */
+/* maximum allowed difference between two pulses is 100 uS */
 #define FS20_PULSE_DIFFERENCE(x,y) FS20_SYMM(x, y, 100)
 
-/* a fs20 datagram consists of 58 bits or 67 bits with 
+
+/* a fs20 datagram consists of 58 bits or 67 bits with
  * second command byte (bit 5 of first command byte is set)
  */
 #define FS20_DATAGRAM_LENGTH 58
@@ -118,9 +135,9 @@
  *    +-------+   +---+       +----
  *    |       |   |   |       |
  *  --+       +---+   +-------+
- *    |  "0" wave |  "1" wave |   
+ *    |  "0" wave |  "1" wave |
  *
- * 
+ *
  * long pulse: 90 <= t <= 180
  *
  * Experiments have shown, that the encoding for a logical "0" is a long high
@@ -188,7 +205,7 @@
 
 
 /* queue length */
-#define FS20_QUEUE_LENGTH 4
+#define FS20_QUEUE_LENGTH 5
 
 /* structures */
 struct fs20_data_t {
@@ -231,7 +248,6 @@ struct fs20_datagram_t {
         uint8_t bytes[9]; // using 58/67 of 72 bits
     } data;
     uint8_t ext; // 0 = one command byte, use data.dg, 1 = extended message, 2 command bytes, use data.edg
-    uint8_t send; // 1 = send this message, 0 = message was send
     uint8_t fht; // 0 = is a FS20 message, 1 = is a FHT message, 2 = is a FHT message
 };
 
@@ -270,6 +286,19 @@ struct ws300_datagram_t {
     uint8_t p16:1;
 };
 
+struct ws300_data_t {
+    int8_t temp;
+    uint8_t temp_frac:4;
+
+    uint8_t rain:1;
+    uint16_t rain_value;
+
+    uint8_t hygro;
+
+    uint8_t wind;
+    uint8_t wind_frac:4;
+};
+
 struct fs20_global_t {
     uint8_t enable;
 #ifdef FS20_RECEIVE_SUPPORT
@@ -279,8 +308,6 @@ struct fs20_global_t {
         uint8_t null:6;
         uint8_t rec;
         uint8_t err;
-        struct fs20_datagram_t queue[FS20_QUEUE_LENGTH];
-        uint8_t len;
         uint8_t timeout;
     } fs20;
 #ifdef FS20_RECEIVE_WS300_SUPPORT
@@ -294,18 +321,11 @@ struct fs20_global_t {
         uint8_t rec;
         uint8_t err;
 
-        int8_t temp;
-        uint8_t temp_frac:4;
-
-        uint8_t rain:1;
-        uint16_t rain_value;
-
-        uint8_t hygro;
-
-        uint8_t wind;
-        uint8_t wind_frac:4;
+        struct ws300_data_t data;
 
         uint16_t last_update;
+
+        uint8_t send;
     } ws300;
 #endif
 #endif
@@ -315,8 +335,23 @@ struct fs20_global_t {
 #endif
 };
 
+struct fs20_queue_element_t {
+	union {
+		struct fs20_datagram_t fs20;
+		struct ws300_data_t ws300;
+	};
+	uint8_t isfs20;
+	uint8_t send; // 1 = send this message, 0 = message was send
+};
+
+struct fs20_queue_t {
+	struct fs20_queue_element_t queue[FS20_QUEUE_LENGTH];
+	uint8_t len;
+};
+
 /* global variables */
 extern volatile struct fs20_global_t fs20_global;
+extern volatile struct fs20_queue_t fs20_queue;
 
 /* public prototypes */
 void fs20_init(void);
@@ -331,14 +366,6 @@ void fs20_process_timeout(void);
 #else
 #define fs20_process()
 #define fs20_process_timeout()
-#endif
-
-#ifdef FS20_RECEIVE_WS300_SUPPORT
-void fs20_receive_ws300_timer(void);
-#endif
-
-#ifdef FS20_RECEIVE_SUPPORT
-void fs20_recv_profile_timer(void);
 #endif
 
 #endif /* FS20_SUPPORT */

@@ -27,7 +27,7 @@
 
 #ifdef DEBUG_FS20_SENDER
 # include "core/debug.h"
-# define FS20S_DEBUG(a...)  debug_printf("fs20sender: " a)
+# define FS20S_DEBUG(a...)  debug_printf("fs20s:" a)
 #else
 # define FS20S_DEBUG(a...)
 #endif
@@ -40,6 +40,8 @@ enum Fs20ConnStates
 };
 
 void fs20_sendmessage(void);
+void fs20_sender_init(void);
 void fs20_sender_mainloop(void);
+
 
 #endif /* _FS20_SENDER_NET_H */
