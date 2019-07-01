@@ -60,6 +60,18 @@ int16_t parse_cmd_i2c_tsl2550_set_operating_mode(char *cmd, char *output,
 #endif
 }
 
+int16_t parse_cmd_i2c_tsl2550_set_auto_range(char *cmd, char *output,
+                                                 uint16_t len) {
+  uint8_t mode;
+  sscanf_P(cmd, PSTR("%hhu"), &mode);
+  i2c_tsl2550_set_auto_range(mode);
+#ifdef ECMD_MIRROR_REQUEST
+  return ECMD_FINAL(snprintf_P(output, len, PSTR("tsl2550 auto %u"), mode));
+#else
+  return ECMD_FINAL(snprintf_P(output, len, PSTR("ok")));
+#endif
+}
+
 int16_t parse_cmd_i2c_tsl2550_show_lux_level(char *cmd, char *output,
                                              uint16_t len) {
   uint16_t ret = i2c_tsl2550_get_lux_level();
@@ -78,12 +90,13 @@ int16_t parse_cmd_i2c_tsl2550_get_state(char *cmd, char *output,
                                         uint16_t len) {
   uint8_t power;
   uint8_t mode;
-  tsl2550_get_state(&power, &mode);
+  uint8_t auto_range;
+  tsl2550_get_state(&power, &mode, &auto_range);
 #ifdef ECMD_MIRROR_REQUEST
   return ECMD_FINAL(snprintf_P(
-      output, len, PSTR("tsl2550 state power %u mode %u"), power, mode));
+      output, len, PSTR("tsl2550 state power %u range %u auto %u"), power, mode, auto_range));
 #else
-  return ECMD_FINAL(snprintf_P(output, len, PSTR("power %u mode %u"), ret));
+  return ECMD_FINAL(snprintf_P(output, len, PSTR("power %u range %u auto %u"), power, mode, auto_range));
 #endif
 }
 
@@ -92,6 +105,7 @@ int16_t parse_cmd_i2c_tsl2550_get_state(char *cmd, char *output,
   block([[I2C]] (TWI))
   ecmd_feature(i2c_tsl2550_show_lux_level, "tsl2550 lux",, Show light level by reading adc registers and computing level)
   ecmd_feature(i2c_tsl2550_set_power_state, "tsl2550 power", VALUE, Set the TSL2550s power state (0: down, 1:up))
-  ecmd_feature(i2c_tsl2550_set_operating_mode, "tsl2550 mode", VALUE, Set the TSL2550s operating mode (0: standard range, 1: extended range))
+  ecmd_feature(i2c_tsl2550_set_operating_mode, "tsl2550 range", VALUE, Set the TSL2550s operating mode (0: standard range, 1: extended range))
+  ecmd_feature(i2c_tsl2550_set_auto_range, "tsl2550 auto", VALUE, Enable automatic range changing (0: off, 1: on))
   ecmd_feature(i2c_tsl2550_get_state, "tsl2550 state",, Get TSL2550s power and operating mode)
 */

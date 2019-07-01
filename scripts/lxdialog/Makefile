@@ -22,25 +22,10 @@ OBJS = checklist.o menubox.o textbox.o yesno.o inputbox.o \
 %.o: %.c
 	$(HOSTCC) $(HOSTCFLAGS) -c -o $@ $<
 
-all: ncurses lxdialog
+all: lxdialog
 
 lxdialog: $(OBJS)
 	$(HOSTCC) -o lxdialog $(OBJS) $(LIBS)
-
-ncurses:
-	@echo "main() {}" > lxtemp.c
-	@if $(HOSTCC) -lncurses lxtemp.c ; then \
-		rm -f lxtemp.c a.out; \
-	else \
-		rm -f lxtemp.c; \
-		echo -e "\007" ;\
-		echo ">> Unable to find the Ncurses libraries." ;\
-		echo ">>" ;\
-		echo ">> You must have Ncurses installed in order" ;\
-		echo ">> to use 'make menuconfig'" ;\
-		echo ;\
-		exit 1 ;\
-	fi
 
 clean:
 	rm -f core *.o *~ lxdialog
