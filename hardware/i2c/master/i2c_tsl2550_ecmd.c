@@ -79,6 +79,8 @@ int16_t parse_cmd_i2c_tsl2550_show_lux_level(char *cmd, char *output,
     return ECMD_FINAL(snprintf_P(output, len, PSTR("no sensor detected")));
   if (ret == 0xdead)
     return ECMD_FINAL(snprintf_P(output, len, PSTR("power is off")));
+  if (ret == 0xfafa)
+    return ECMD_FINAL(snprintf_P(output, len, PSTR("not ready")));
 #ifdef ECMD_MIRROR_REQUEST
   return ECMD_FINAL(snprintf_P(output, len, PSTR("tsl2550 lux %u"), ret));
 #else

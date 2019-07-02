@@ -24,6 +24,7 @@
 #include <util/twi.h>
 #include <util/delay.h>
 #include <stdbool.h>
+#include <errno.h>
 #include "autoconf.h"
 #include "config.h"
 #include "core/debug.h"
@@ -99,7 +100,8 @@ const short countLut[128] PROGMEM = {
     1807, 1871, 1935, 1999, 2095, 2223, 2351, 2479, 2607, 2735, 2863, 2991,
     3119, 3247, 3375, 3503, 3631, 3759, 3887, 4015};
 
-const short kMaxLux = 1846; // standard mode max
+const short stdMaxLux = 1846; // standard mode max
+const short extMaxLux = 1846*5; // extended mode max
 const short autoRangeMaxLux = 1800;
 
 uint16_t tsl2550_compute_lux(uint8_t channel0, uint8_t channel1) {
@@ -107,7 +109,7 @@ uint16_t tsl2550_compute_lux(uint8_t channel0, uint8_t channel1) {
   TSLDEBUG("tsl2550: clux: c0: %u, c1: %u\n", channel0, channel1);
 
   if (channel0 == 255 || channel1 == 255 || channel0 == channel1)
-    return kMaxLux;
+    return stdMaxLux;
 
   //    lookup count from channel value
   unsigned short count0 = pgm_read_word(&countLut[channel0 & 0x7f]);
@@ -135,8 +137,8 @@ uint16_t tsl2550_compute_lux(uint8_t channel0, uint8_t channel1) {
   TSLDEBUG("tsl2550: clux: lux: %u\n", lux);
 
   // range check lux
-  if (lux > kMaxLux)
-    lux = kMaxLux;
+  if (lux > stdMaxLux)
+    lux = stdMaxLux;
 
   return ((unsigned short)lux);
 }
@@ -265,13 +267,13 @@ uint8_t tsl2550_value_is_valid(uint8_t value) {
   return (value & 0x80) == 0x80;
 }
 
-uint16_t tsl2550_get_lux_level(void) {
-  uint16_t ret = 0xffff;
+uint8_t tsl2550_get_lux_level(void) {
+  uint8_t lux = 0;
   uint8_t c0;
   uint8_t c1;
 
   if (!tsl2550_state.power_state)
-    return 0xdead;
+    return 0xDEAD;
 
   TSLDEBUG("tsl2550: get_lux_level\n");
 
@@ -281,44 +283,52 @@ uint16_t tsl2550_get_lux_level(void) {
   c1 = c1tsl2550_read_channel(1);
 
   if (!tsl2550_value_is_valid(c0) || !tsl2550_value_is_valid(c1))
-    return 0xffff;
+    return 0xFAFA;
 
-  ret = tsl2550_compute_lux(c0, c1);
+  lux = tsl2550_compute_lux(c0, c1);
 
   if (tsl2550_state.extende_range != 0)
-    ret *= 5;
+    lux *= 5;
 
-  TSLDEBUG("tsl2550: get_lux_level: %u\n", ret);
+  TSLDEBUG("tsl2550: get_lux_level: %u\n", lux);
 
-  return ret;
+  return lux;
 }
 
-bool tsl2550_autorange_changed(uint16_t lux) {
-  if (tsl2550_state.auto_range) {
+bool tsl2550_autorange_change(uint16_t lux) {
+  if (tsl2550_state.auto_range && lux <= extMaxLux) {
     if (tsl2550_state.extende_range == 0 && lux > autoRangeMaxLux) {
-      i2c_tsl2550_set_operating_mode(1);
       return true;
     }
     if (tsl2550_state.extende_range == 1 && lux < autoRangeMaxLux) {
-      i2c_tsl2550_set_operating_mode(0);
       return true;
     }
   }
   return false;
 }
 
+void tsl2550_autorange_set(uint16_t lux) {
+  if (tsl2550_state.auto_range && lux <= extMaxLux) {
+    if (tsl2550_state.extende_range == 0 && lux > autoRangeMaxLux) {
+      i2c_tsl2550_set_operating_mode(1);
+    }
+    else if (tsl2550_state.extende_range == 1 && lux < autoRangeMaxLux) {
+      i2c_tsl2550_set_operating_mode(0);
+    }
+  }
+}
+
 uint16_t i2c_tsl2550_get_lux_level(void) {
-  uint16_t ret = 0;
+  uint16_t lux = 0;
 
-  ret = tsl2550_get_lux_level();
+  lux = tsl2550_get_lux_level();
 
-  if (tsl2550_autorange_changed(ret))
+  if (tsl2550_autorange_change(lux))
   {
-	  _delay_ms(100);
-	  ret = tsl2550_get_lux_level();
+	  tsl2550_autorange_set(lux);
   }
 
-  return ret;
+  return lux;
 }
 
 void tsl2550_get_state(uint8_t *power, uint8_t *mode, uint8_t *auto_range) {
