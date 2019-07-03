@@ -108,7 +108,10 @@ uint16_t tsl2550_compute_lux(uint8_t channel0, uint8_t channel1) {
 
   TSLDEBUG("tsl2550: clux: c0: %u, c1: %u\n", channel0, channel1);
 
-  if (channel0 == 255 || channel1 == 255 || channel0 == channel1)
+  if (channel0 == 255 || channel1 == 255)
+    return stdMaxLux;
+    
+  if (channel0 != 0 && channel0 == channel1)
     return stdMaxLux;
 
   //    lookup count from channel value
