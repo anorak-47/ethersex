@@ -47,8 +47,8 @@
 #define TSL2550_POWER_UP 0x03
 #define TSL2550_STANDARD_RANGE 0x18
 #define TSL2550_EXTENDED_RANGE 0x1d
-#define TSL2550_READ_c0 0x43
-#define TSL2550_READ_c1 0x83
+#define TSL2550_READ_C0 0x43
+#define TSL2550_READ_C1 0x83
 
 /*
  * Structs
@@ -75,7 +75,7 @@ static struct tsl2550_state_s tsl2550_state;
  */
 
 // Lookup table for channel ratio (i.e. channel1 / channel0)
-const unsigned char ratioLut[129] PROGMEM = {
+const uint8_t ratioLut[129] PROGMEM = {
     100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 99,
     99,  99,  99,  99,  99,  99,  99,  99,  99,  99,  99,  99,  98,  98,  98,
     98,  98,  98,  98,  97,  97,  97,  97,  97,  96,  96,  96,  96,  95,  95,
@@ -87,7 +87,7 @@ const unsigned char ratioLut[129] PROGMEM = {
     31,  31,  31,  31,  30,  30,  30,  30,  30};
 
 // Lookup table to convert channel values to counts unsigned
-const short countLut[128] PROGMEM = {
+const uint16_t countLut[128] PROGMEM = {
     0,    1,    2,    3,    4,    5,    6,    7,    8,    9,    10,   11,
     12,   13,   14,   15,   16,   18,   20,   22,   24,   26,   28,   30,
     32,   34,   36,   38,   40,   42,   44,   46,   49,   53,   57,   61,
@@ -100,56 +100,56 @@ const short countLut[128] PROGMEM = {
     1807, 1871, 1935, 1999, 2095, 2223, 2351, 2479, 2607, 2735, 2863, 2991,
     3119, 3247, 3375, 3503, 3631, 3759, 3887, 4015};
 
-const short stdMaxLux = 1846; // standard mode max
-const short extMaxLux = 1846*5; // extended mode max
-const short autoRangeMaxLux = 1800;
+const uint16_t stdMaxLux = 1846;     // standard mode max
+const uint16_t extMaxLux = 1846 * 5; // extended mode max
+const uint16_t autoRangeMaxLux = 1800;
+const uint8_t saturatedMax = 0x7f;
 
 uint16_t tsl2550_compute_lux(uint8_t channel0, uint8_t channel1) {
+  uint8_t c0 = channel0 & 0x7f;
+  uint8_t c1 = channel1 & 0x7f;
 
-  TSLDEBUG("tsl2550: clux: c0: %u, c1: %u\n", channel0, channel1);
+  TSLDEBUG("clux: c0: %u, c1: %u\n", c0, c1);
 
-  if (channel0 == 255 || channel1 == 255)
+  if (c0 == saturatedMax || c1 == saturatedMax)
     return stdMaxLux;
-    
-  if (channel0 != 0 && channel0 == channel1)
+
+  if (c0 != 0 && c0 == c1)
     return stdMaxLux;
 
   //    lookup count from channel value
-  unsigned short count0 = pgm_read_word(&countLut[channel0 & 0x7f]);
-  unsigned short count1 = pgm_read_word(&countLut[channel1 & 0x7f]);
+  uint16_t count0 = pgm_read_word(&countLut[c0]);
+  uint16_t count1 = pgm_read_word(&countLut[c1]);
 
-  TSLDEBUG("tsl2550: clux: count0: %u, count1: %u\n", count0, count1);
+  TSLDEBUG("clux: count0: %u, count1: %u\n", count0, count1);
 
   // calculate ratio
   // Note: the "128" is a scaling factor
-  unsigned char ratio = 128; // default
+  uint8_t ratio = 128; // default
 
   // avoid division by zero
   // and count1 cannot be greater than count0
   if ((count0) && (count1 <= count0))
     ratio = ((count1 * 128L) / count0);
 
-  TSLDEBUG("tsl2550: clux: ratio: %u\n", ratio);
+  TSLDEBUG("clux: ratio: %u\n", ratio);
 
   // calculate lux
   // Note: the "256" is a scaling factor
-  unsigned long lux =
-      ((unsigned long)(count0 - count1) * pgm_read_byte(&ratioLut[ratio])) /
-      256L;
+  uint32_t lux =
+      ((uint32_t)(count0 - count1) * pgm_read_byte(&ratioLut[ratio])) / 256L;
 
-  TSLDEBUG("tsl2550: clux: lux: %u\n", lux);
+  TSLDEBUG("clux: lux: %u\n", lux);
 
   // range check lux
   if (lux > stdMaxLux)
     lux = stdMaxLux;
 
-  return ((unsigned short)lux);
+  return ((uint16_t)lux);
 }
 
 uint16_t i2c_tsl2550_set_operating_mode(uint8_t mode) {
   uint16_t ret = 0xffff;
-
-  TSLDEBUG("tsl2550: set mode: %u\n", mode);
 
   if (!i2c_master_select(I2C_SLA_TSL2550, TW_WRITE))
     goto end;
@@ -163,20 +163,19 @@ uint16_t i2c_tsl2550_set_operating_mode(uint8_t mode) {
 
 end:
   i2c_master_stop();
-  TSLDEBUG("tsl2550: mode: %u\n", ret);
+  TSLDEBUG("set_mode: %u\n", ret);
   return ret;
 }
 
-void i2c_tsl2550_set_auto_range(uint8_t on)
-{
-	tsl2550_state.auto_range = on;
+void i2c_tsl2550_set_auto_range(uint8_t on) {
+  tsl2550_state.auto_range = on;
 }
 
 uint8_t i2c_tsl2550_detect() {
   uint8_t ret = 0;
   uint8_t reg03 = 0;
 
-  TSLDEBUG("tsl2550: detect\n");
+  TSLDEBUG("detect\n");
 
   if (!i2c_master_select(I2C_SLA_TSL2550, TW_WRITE))
     goto end;
@@ -190,8 +189,6 @@ uint8_t i2c_tsl2550_detect() {
   if (!i2c_master_select(I2C_SLA_TSL2550, TW_READ))
     goto end;
 
-  /* read tsl2550_state */
-
   if (i2c_master_transmit() != TW_MR_DATA_NACK)
     goto end;
 
@@ -199,10 +196,10 @@ uint8_t i2c_tsl2550_detect() {
 
 end:
   i2c_master_stop();
-  TSLDEBUG("tsl2550: detect: %u\n", reg03);
+  TSLDEBUG("detect: %u\n", reg03);
 
   if (reg03 == TSL2550_POWER_UP) {
-    TSLDEBUG("tsl2550: detect: found\n");
+    TSLDEBUG("detect: found\n");
     ret = 1;
   }
 
@@ -211,8 +208,6 @@ end:
 
 uint16_t i2c_tsl2550_set_power_state(uint8_t state) {
   uint16_t ret = 0xffff;
-
-  TSLDEBUG("tsl2550: set pwr: %u\n", state);
 
   if (!i2c_master_select(I2C_SLA_TSL2550, TW_WRITE))
     goto end;
@@ -226,7 +221,7 @@ uint16_t i2c_tsl2550_set_power_state(uint8_t state) {
 
 end:
   i2c_master_stop();
-  TSLDEBUG("tsl2550: pwr: %u\n", ret);
+  TSLDEBUG("set_pwr: %u\n", ret);
 
   if (state > 0 && tsl2550_state.extende_range > 0) {
     /* On power up we should reset operating mode too... */
@@ -236,15 +231,13 @@ end:
   return ret;
 }
 
-uint8_t c1tsl2550_read_channel(uint8_t adc) {
+uint8_t c1tsl2550_read_channel(uint8_t channel) {
   uint8_t val = 0;
-
-  TSLDEBUG("tsl2550: read_lux\n");
 
   if (!i2c_master_select(I2C_SLA_TSL2550, TW_WRITE))
     goto end;
 
-  TWDR = (adc == 0 ? TSL2550_READ_c0 : TSL2550_READ_c1);
+  TWDR = (channel == 0 ? TSL2550_READ_C0 : TSL2550_READ_C1);
   if (i2c_master_transmit_with_ack() != TW_MT_DATA_ACK)
     goto end;
 
@@ -253,8 +246,6 @@ uint8_t c1tsl2550_read_channel(uint8_t adc) {
   if (!i2c_master_select(I2C_SLA_TSL2550, TW_READ))
     goto end;
 
-  /* read tsl2550_state */
-
   if (i2c_master_transmit() != TW_MR_DATA_NACK)
     goto end;
 
@@ -262,38 +253,38 @@ uint8_t c1tsl2550_read_channel(uint8_t adc) {
 
 end:
   i2c_master_stop();
-  TSLDEBUG("tsl2550: read_lux: val: %u\n", val);
+  TSLDEBUG("read_chan %u: %u\n", channel, val);
   return val;
 }
 
-uint8_t tsl2550_value_is_valid(uint8_t value) {
+bool tsl2550_value_is_valid(uint8_t value) {
   return (value & 0x80) == 0x80;
 }
 
-uint8_t tsl2550_get_lux_level(void) {
-  uint8_t lux = 0;
+uint16_t tsl2550_get_lux_level(void) {
+  uint16_t lux = 0;
   uint8_t c0;
   uint8_t c1;
 
   if (!tsl2550_state.power_state)
     return 0xDEAD;
 
-  TSLDEBUG("tsl2550: get_lux_level\n");
-
   /* read adc channel 0 */
   c0 = c1tsl2550_read_channel(0);
   /* read adc channel 1 */
   c1 = c1tsl2550_read_channel(1);
 
-  if (!tsl2550_value_is_valid(c0) || !tsl2550_value_is_valid(c1))
+  if (!tsl2550_value_is_valid(c0) || !tsl2550_value_is_valid(c1)) {
+    TSLDEBUG("get_lux_level: invalid: %u %u\n", c0, c1);
     return 0xFAFA;
+  }
 
   lux = tsl2550_compute_lux(c0, c1);
 
   if (tsl2550_state.extende_range != 0)
     lux *= 5;
 
-  TSLDEBUG("tsl2550: get_lux_level: %u\n", lux);
+  TSLDEBUG("get_lux_level: %u\n", lux);
 
   return lux;
 }
@@ -314,21 +305,18 @@ void tsl2550_autorange_set(uint16_t lux) {
   if (tsl2550_state.auto_range && lux <= extMaxLux) {
     if (tsl2550_state.extende_range == 0 && lux > autoRangeMaxLux) {
       i2c_tsl2550_set_operating_mode(1);
-    }
-    else if (tsl2550_state.extende_range == 1 && lux < autoRangeMaxLux) {
+    } else if (tsl2550_state.extende_range == 1 && lux < autoRangeMaxLux) {
       i2c_tsl2550_set_operating_mode(0);
     }
   }
 }
 
 uint16_t i2c_tsl2550_get_lux_level(void) {
-  uint16_t lux = 0;
+  uint16_t lux = tsl2550_get_lux_level();
 
-  lux = tsl2550_get_lux_level();
-
-  if (tsl2550_autorange_change(lux))
-  {
-	  tsl2550_autorange_set(lux);
+  if (tsl2550_autorange_change(lux)) {
+    TSLDEBUG("get_lux_level: range!\n");
+    tsl2550_autorange_set(lux);
   }
 
   return lux;
