@@ -54,7 +54,7 @@ int16_t parse_cmd_i2c_tsl2550_set_operating_mode(char *cmd, char *output,
   if (temp == 0xffff)
     return ECMD_FINAL(snprintf_P(output, len, PSTR("no sensor detected")));
 #ifdef ECMD_MIRROR_REQUEST
-  return ECMD_FINAL(snprintf_P(output, len, PSTR("tsl2550 mode %u"), mode));
+  return ECMD_FINAL(snprintf_P(output, len, PSTR("tsl2550 range %u"), mode));
 #else
   return ECMD_FINAL(snprintf_P(output, len, PSTR("ok")));
 #endif
